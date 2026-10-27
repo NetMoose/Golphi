@@ -23,7 +23,7 @@
 ## 4. Итоговая проверка и передача
 
 - [x] 4.1 Проверить полные MODIFIED-блоки: Run returns panic diagnostics и Failure shutdown cancels unstarted tasks сохраняют имена и все четыре исходных сценария; сверить покрытие новых требований. Выполнить openspec validate define-cleanup-failure-contract --strict, openspec validate --specs --strict, проверку ссылок и git diff --check.
-- [ ] 4.2 Сохранить docs/contracts/cleanup-failure-review.md с отдельными и итоговым review, покрытием, проверками, открытыми вопросами и точными финальными Scope; выполнить commit/push, проверить чистоту checkout и равенство remote HEAD. Не заявлять реализацию runtime или выполнение T-01–T-09.
+- [x] 4.2 Сохранить docs/contracts/cleanup-failure-review.md с отдельными и итоговым review, покрытием, проверками, открытыми вопросами и точными финальными Scope; выполнить commit/push, проверить чистоту checkout и равенство remote HEAD. Не заявлять реализацию runtime или выполнение T-01–T-09.
 - [ ] 4.3 Создать PR в develop с результатом документационного этапа и проверками; проверить URL/base/head и приложить PR к чату.
 
 ## Workflow follow-up
