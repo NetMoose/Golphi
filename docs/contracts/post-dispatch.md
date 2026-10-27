@@ -1,6 +1,6 @@
 # Передача задач Post на UI-поток Golphi
 
-Документ фиксирует целевой контракт из [дельты post-dispatch](../../openspec/changes/define-post-dispatch-contract/specs/post-dispatch/spec.md), [дельты application-failure](../../openspec/changes/define-post-dispatch-contract/specs/application-failure/spec.md) и [дизайна изменения](../../openspec/changes/define-post-dispatch-contract/design.md). Это проектные трассировки для ручной проверки документации, а не подтверждение реализации runtime, очереди, backend или FFI. Они не закрывают E0 и не являются runtime-тестами T-01–T-09.
+Документ фиксирует целевой контракт из [дельты post-dispatch](../../openspec/changes/archive/2026-10-27-define-post-dispatch-contract/specs/post-dispatch/spec.md), [дельты application-failure](../../openspec/changes/archive/2026-10-27-define-post-dispatch-contract/specs/application-failure/spec.md) и [дизайна изменения](../../openspec/changes/archive/2026-10-27-define-post-dispatch-contract/design.md). Это проектные трассировки для ручной проверки документации, а не подтверждение реализации runtime, очереди, backend или FFI. Они не закрывают E0 и не являются runtime-тестами T-01–T-09.
 
 ## Принятие и граница работы
 
@@ -97,4 +97,4 @@ FIFO ограничен очередью `Post`. Порядок относите
 
 Также открыты ожидание результата и индивидуальная отмена; задачи с владельцем; точный получатель `Post` и публичные типы ошибок; ёмкость и перегрузка очереди; порядок относительно native events/`OnChange`, взаимные изменения компонентов, справедливость и бесконечные последовательности; bootstrap и закрепление UI-потока, граница готовности и ограничения `Run`; ошибки/паники очистки и их приоритет относительно исходной паники; внутренние сбои и алгоритмы FFI/backend.
 
-Остальные вопросы событий, иерархии компонентов и Q-01–Q-14 сохраняются в [полном реестре изменения](../../openspec/changes/define-post-dispatch-contract/design.md#open-questions). Этот документ фиксирует только выбранную часть Q-04/Q-05/Q-06 и не завершает весь E0.
+Остальные вопросы событий, иерархии компонентов и Q-01–Q-14 сохраняются в [полном реестре изменения](../../openspec/changes/archive/2026-10-27-define-post-dispatch-contract/design.md#open-questions). Этот документ фиксирует только выбранную часть Q-04/Q-05/Q-06 и не завершает весь E0.
