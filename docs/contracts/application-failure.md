@@ -1,6 +1,6 @@
 # Аварийная остановка приложения Golphi
 
-Документ фиксирует целевой контракт из [спецификации application-failure](../../openspec/changes/define-destruction-and-event-failure-contract/specs/application-failure/spec.md) и [дизайна изменения](../../openspec/changes/define-destruction-and-event-failure-contract/design.md). Это проверяемое описание будущего поведения, а не подтверждение реализации runtime, FFI или конкретного backend. Оно не означает завершение E0.
+Документ фиксирует целевой контракт из [спецификации application-failure](../../openspec/changes/archive/2026-10-27-define-destruction-and-event-failure-contract/specs/application-failure/spec.md) и [дизайна изменения](../../openspec/changes/archive/2026-10-27-define-destruction-and-event-failure-contract/design.md). Это проверяемое описание будущего поведения, а не подтверждение реализации runtime, FFI или конкретного backend. Оно не означает завершение E0.
 
 ## Граница сбоя и последовательность остановки
 
@@ -68,4 +68,4 @@ panic в прикладном обработчике
 - Публичный тип диагностической ошибки, её форматирование, способ доступа к исходному значению и представление стека; конкретный алгоритм FFI и перехвата.
 - Обычная остановка, `Close`/`Hide`, модальность и вложенные циклы; ошибки конструкторов и setters живых компонентов; остальные несогласованные части Q-05/Q-06.
 
-Полный [реестр открытых вопросов изменения](../../openspec/changes/define-destruction-and-event-failure-contract/design.md#open-questions) сохраняет остальные вопросы Q-01–Q-14. Контракт не выбирает способ восстановления UI после паники или автоматический лимит событий.
+Полный [реестр открытых вопросов изменения](../../openspec/changes/archive/2026-10-27-define-destruction-and-event-failure-contract/design.md#open-questions) сохраняет остальные вопросы Q-01–Q-14. Контракт не выбирает способ восстановления UI после паники или автоматический лимит событий.
