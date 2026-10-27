@@ -1,6 +1,6 @@
 # Проверка контракта сбоев очистки
 
-Изменение: [define-cleanup-failure-contract](../../openspec/changes/define-cleanup-failure-contract/proposal.md). [Дизайн и открытые вопросы](../../openspec/changes/define-cleanup-failure-contract/design.md), [задачи](../../openspec/changes/define-cleanup-failure-contract/tasks.md), [дельта application-failure](../../openspec/changes/define-cleanup-failure-contract/specs/application-failure/spec.md), [дельта post-dispatch](../../openspec/changes/define-cleanup-failure-contract/specs/post-dispatch/spec.md).
+Изменение: [define-cleanup-failure-contract](../../openspec/changes/archive/2026-10-27-define-cleanup-failure-contract/proposal.md). [Дизайн и открытые вопросы](../../openspec/changes/archive/2026-10-27-define-cleanup-failure-contract/design.md), [задачи](../../openspec/changes/archive/2026-10-27-define-cleanup-failure-contract/tasks.md), [дельта application-failure](../../openspec/changes/archive/2026-10-27-define-cleanup-failure-contract/specs/application-failure/spec.md), [дельта post-dispatch](../../openspec/changes/archive/2026-10-27-define-cleanup-failure-contract/specs/post-dispatch/spec.md).
 
 Это документальное применение выбранной части E0. Runtime, backend, FFI, алгоритм очистки и агрегатор ошибок не реализованы; T-01–T-09 не выполнялись. Q-05 и весь E0 остаются незавершёнными.
 
@@ -42,9 +42,9 @@
 
 Сохраняется весь остаток вопросов UI-потока, Post, событий, Owner/Parent, конструкторов/setters и Q-01–Q-14 из дизайна изменения. Принятые правила не означают выбора реализации этих механизмов.
 
-## Будущая синхронизация
+## Завершённая синхронизация
 
-Основные требования пока не синхронизированы. При отдельном sync/archive применить обе дельты, затем вручную заменить только Scope точными текстами ниже; Purpose и прочие разделы при замене Scope сохранить. Автоматическое слияние требований Scope не обновляет. При архивации обновить ссылки актуальных документов на архив, не переписывая прежние архивы и исторические отчёты.
+Обе дельты синхронизированы с основными спецификациями; Scope вручную обновлены точными текстами ниже, с сохранением Purpose и прочих разделов при замене Scope. Автоматическое слияние требований Scope не обновляет. Ссылки актуальных документов обновлены на архив; прежние архивы и исторические отчёты сохранены.
 
 ### openspec/specs/application-failure/spec.md — Scope
 
@@ -59,3 +59,7 @@
 Ветка feat/define-cleanup-failure-contract создана от актуального develop (7330c37) в существующем checkout без worktree. Использован Subagent Driven Development: контракты подготовлены параллельно, после их review параллельно согласованы непересекающиеся файлы дизайна, реестров и Scope. Git выполняет только координатор; этапы фиксируются commit/push, результат передаётся PR в develop.
 
 Checkbox-задачи OpenSpec извлечены в briefs непосредственно; стандартный helper ожидает заголовки Task N. Указания пользователя о checkout, параллельных независимых задачах и Git у координатора имеют приоритет над стандартными настройками навыка. Продуктовые решения сверх согласованных не принимались.
+
+## Свидетельства синхронизации и архивации
+
+PR #7 слит в develop коммитом b05d61a. Выполнены все 12/12 задач изменения; изменение перемещено в `openspec/changes/archive/2026-10-27-define-cleanup-failure-contract`. Основная спецификация application-failure содержит 6 требований и 13 сценариев, post-dispatch — 9 требований и 18 сценариев. Строгая проверка основных спецификаций: 4 passed, 0 failed. Итоговое review ветки архивации ожидается; его результат фиксирует координатор.
