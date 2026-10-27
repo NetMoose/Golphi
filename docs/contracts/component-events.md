@@ -1,6 +1,6 @@
 # Контракт событий компонентов Golphi
 
-Документ фиксирует согласованную часть контракта E0 из [спецификации событий](../../openspec/changes/define-component-contract/specs/component-events/spec.md) и [дизайна изменения](../../openspec/changes/define-component-contract/design.md). Это описание целевого поведения, а не заявление о готовом runtime или проверенных backend. Полный публичный API ещё не утверждён.
+Документ фиксирует согласованную часть контракта E0 из [спецификации событий](../../openspec/changes/archive/2026-10-27-define-component-contract/specs/component-events/spec.md) и [дизайна изменения](../../openspec/changes/archive/2026-10-27-define-component-contract/design.md). Это описание целевого поведения, а не заявление о готовом runtime или проверенных backend. Полный публичный API ещё не утверждён.
 
 ## Условия доставки
 
@@ -117,4 +117,4 @@
 - Поведение при `panic` в callback, методы уничтоженного объекта, повторный `Destroy`, ошибки конструкторов и setters, кроме согласованного `SetParent(parent) error`.
 - Bootstrap UI-потока, ограничения `Run`, принятие и отмена `Post`, присоединение к ещё не отображаемому контейнеру, перенос между формами/приложениями и прочие вопросы иерархии и native lifecycle.
 
-Полный [реестр открытых вопросов изменения](../../openspec/changes/define-component-contract/design.md#open-questions) сохраняет также вопросы module path и лицензии, зависимостей и bridge, первого backend и версий, а также Q-07–Q-14. Настоящий контракт не закрывает эти вопросы и не завершает весь E0.
+Полный [реестр открытых вопросов изменения](../../openspec/changes/archive/2026-10-27-define-component-contract/design.md#open-questions) сохраняет также вопросы module path и лицензии, зависимостей и bridge, первого backend и версий, а также Q-07–Q-14. Настоящий контракт не закрывает эти вопросы и не завершает весь E0.
