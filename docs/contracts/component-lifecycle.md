@@ -121,7 +121,7 @@
 
 ## Открытые вопросы
 
-Актуальный остаток вопросов перечислен в [дизайне изменения Post](../../openspec/changes/define-post-dispatch-contract/design.md#open-questions); [исторический реестр](../../openspec/changes/archive/2026-10-27-define-destruction-and-event-failure-contract/design.md#open-questions) сохраняет контекст решений о компонентах. Ниже перечислены оставшиеся вопросы; принятые правила Destroy/Destroyed и panic при обращении к уничтоженному объекту закрывают только часть Q-05. Q-04/Q-05/Q-06 и весь E0 не закрываются:
+Актуальный остаток вопросов перечислен в [дизайне изменения Post](../../openspec/changes/archive/2026-10-27-define-post-dispatch-contract/design.md#open-questions); [исторический реестр](../../openspec/changes/archive/2026-10-27-define-destruction-and-event-failure-contract/design.md#open-questions) сохраняет контекст решений о компонентах. Ниже перечислены оставшиеся вопросы; принятые правила Destroy/Destroyed и panic при обращении к уничтоженному объекту закрывают только часть Q-05. Q-04/Q-05/Q-06 и весь E0 не закрываются:
 
 - Q-01: module path и проверка существующей лицензии перед изменением лицензионных решений; название Golphi уже принято.
 - Q-02/Q-03: технические зависимости, bridge, первый Linux backend, версии Go/toolkit и платформенная матрица.
