@@ -18,11 +18,11 @@
 - [x] 3.1 Обновить docs/design.md: раздел о сбоях/очистке, Q-05, принятые решения, версию и историю; проверить соответствие обоим контрактам, отсутствие старого ограничения Run только успешной очисткой и сохранение остатка вопросов и незавершённости E0.
 - [x] 3.2 Согласовать актуальные реестры docs/contracts/component-events.md и component-lifecycle.md с выбранной частью cleanup-контракта; проверить отсутствие изменений поведения компонентов и отсутствие blanket-исключений уже принятых ошибок/паник очистки. Остальные вопросы сохранить, исторические отчёты не редактировать.
 - [x] 3.3 Обновить только Scope основных application-failure/post-dispatch переходными оговорками по design.md; проверить неизменность Purpose/Requirements и остальных основных спецификаций. Подготовить точные окончательные Scope для будущего sync в итоговом отчёте.
-- [ ] 3.4 Провести review этапа 3 относительно дельт и трассировок, проверить ссылки, diff и неизменность архивов; выполнить commit/push и подтвердить remote HEAD.
+- [x] 3.4 Провести review этапа 3 относительно дельт и трассировок, проверить ссылки, diff и неизменность архивов; выполнить commit/push и подтвердить remote HEAD.
 
 ## 4. Итоговая проверка и передача
 
-- [ ] 4.1 Проверить полные MODIFIED-блоки: Run returns panic diagnostics и Failure shutdown cancels unstarted tasks сохраняют имена и все четыре исходных сценария; сверить покрытие новых требований. Выполнить openspec validate define-cleanup-failure-contract --strict, openspec validate --specs --strict, проверку ссылок и git diff --check.
+- [x] 4.1 Проверить полные MODIFIED-блоки: Run returns panic diagnostics и Failure shutdown cancels unstarted tasks сохраняют имена и все четыре исходных сценария; сверить покрытие новых требований. Выполнить openspec validate define-cleanup-failure-contract --strict, openspec validate --specs --strict, проверку ссылок и git diff --check.
 - [ ] 4.2 Сохранить docs/contracts/cleanup-failure-review.md с отдельными и итоговым review, покрытием, проверками, открытыми вопросами и точными финальными Scope; выполнить commit/push, проверить чистоту checkout и равенство remote HEAD. Не заявлять реализацию runtime или выполнение T-01–T-09.
 - [ ] 4.3 Создать PR в develop с результатом документационного этапа и проверками; проверить URL/base/head и приложить PR к чату.
 
