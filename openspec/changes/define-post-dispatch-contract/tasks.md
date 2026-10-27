@@ -23,8 +23,8 @@
 ## 4. Итоговая проверка и передача
 
 - [x] 4.1 Проверить соответствие всех принятых решений сценариям и сохранение имён трёх MODIFIED-требований application-failure со всеми четырьмя исходными сценариями; выполнить openspec validate define-post-dispatch-contract --strict, openspec validate --specs --strict, проверку ссылок и git diff --check.
-- [ ] 4.2 Сохранить docs/contracts/post-dispatch-review.md с результатами отдельного и итогового review, покрытием, проверками, открытыми вопросами и точными текстами будущей миграции Purpose/Scope; выполнить commit/push и проверить чистоту checkout и равенство remote HEAD. Не заявлять runtime или выполнение T-01–T-09.
-- [ ] 4.3 Создать PR в develop с результатом документального этапа, проверками и открытыми вопросами; проверить URL/base/head и приложить PR к чату.
+- [x] 4.2 Сохранить docs/contracts/post-dispatch-review.md с результатами отдельного и итогового review, покрытием, проверками, открытыми вопросами и точными текстами будущей миграции Purpose/Scope; выполнить commit/push и проверить чистоту checkout и равенство remote HEAD. Не заявлять runtime или выполнение T-01–T-09.
+- [x] 4.3 Создать PR в develop с результатом документального этапа, проверками и открытыми вопросами; проверить URL/base/head и приложить PR к чату.
 
 ## Workflow follow-up
 
