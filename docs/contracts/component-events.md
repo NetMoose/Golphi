@@ -1,6 +1,6 @@
 # Контракт событий компонентов Golphi
 
-Документ фиксирует согласованную часть контракта E0 из [спецификации событий](../../openspec/changes/archive/2026-10-27-define-component-contract/specs/component-events/spec.md) и [дизайна изменения](../../openspec/changes/archive/2026-10-27-define-component-contract/design.md). Это описание целевого поведения, а не заявление о готовом runtime или проверенных backend. Новые правила отмены, текущего адресата и сброса сравнения определены [дельтой событий](../../openspec/changes/define-destruction-and-event-failure-contract/specs/component-events/spec.md) и [дизайном изменения](../../openspec/changes/define-destruction-and-event-failure-contract/design.md). Полный публичный API ещё не утверждён.
+Документ фиксирует согласованную часть контракта E0 из [спецификации событий](../../openspec/changes/archive/2026-10-27-define-component-contract/specs/component-events/spec.md) и [дизайна изменения](../../openspec/changes/archive/2026-10-27-define-component-contract/design.md). Это описание целевого поведения, а не заявление о готовом runtime или проверенных backend. Новые правила отмены, текущего адресата и сброса сравнения определены [дельтой событий](../../openspec/changes/archive/2026-10-27-define-destruction-and-event-failure-contract/specs/component-events/spec.md) и [дизайном изменения](../../openspec/changes/archive/2026-10-27-define-destruction-and-event-failure-contract/design.md). Полный публичный API ещё не утверждён.
 
 ## Условия доставки
 
@@ -158,4 +158,4 @@
 - Ошибки конструкторов и setters живых компонентов, кроме согласованного `SetParent(parent) error`; ошибки/паники очистки и точные типы диагностических ошибок.
 - Bootstrap UI-потока, ограничения `Run`, присоединение к ещё не отображаемому контейнеру, перенос между формами/приложениями и прочие вопросы иерархии и native lifecycle.
 
-Паника обработчика и аварийная остановка определены [отдельным контрактом](application-failure.md); он не задаёт политику обычной остановки или `Post`. Полный [реестр открытых вопросов изменения](../../openspec/changes/define-destruction-and-event-failure-contract/design.md#open-questions) сохраняет прочие вопросы Q-01–Q-14. Настоящий контракт не закрывает их и не завершает весь E0.
+Паника обработчика и аварийная остановка определены [отдельным контрактом](application-failure.md); он не задаёт политику обычной остановки или `Post`. Полный [реестр открытых вопросов изменения](../../openspec/changes/archive/2026-10-27-define-destruction-and-event-failure-contract/design.md#open-questions) сохраняет прочие вопросы Q-01–Q-14. Настоящий контракт не закрывает их и не завершает весь E0.
