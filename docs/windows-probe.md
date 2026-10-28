@@ -1,14 +1,15 @@
-# Windows startup-thread probe
+# Проверка startup thread на Windows
 
-This unattended experiment targets an **interactive Windows 10/amd64 desktop**. It creates one hidden native STATIC window, receives actual Win32 `EnumWindows` callbacks (including its own window), checks startup/main/callback OS-thread identity and worker separation, and destroys the window on the startup thread. No clicks are required. It prints the actual Windows build and system DPI/scale after enabling system DPI awareness. The printed scale is the system/primary scale, not all monitors' settings.
+Проверка предназначена для **Windows 10/amd64 с обычным рабочим столом**. Программа создаёт одно скрытое нативное окно STATIC, получает вызовы Win32 `EnumWindows` (в том числе для своего окна), сравнивает идентификаторы системных потоков при запуске, в main и в callback, проверяет отдельный поток фоновой goroutine и уничтожает окно на исходном потоке. Нажимать что-либо не требуется.
 
-Build from the repository root with Go 1.26.5 (no C compiler required):
+Программа выводит фактическую сборку Windows и системный DPI/масштаб после включения режима учёта системного DPI. Этот масштаб относится к системе/основному монитору, а не ко всем мониторам.
 
-```sh
-CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o /tmp/golphi-probe-windows-amd64.exe ./cmd/probe-windows
-```
+## Запуск готовой программы
 
-Copy the executable to Windows. On Windows, run this PowerShell from the directory containing it. Keep the generated log and report the printed exit code:
+1. Скопируй `golphi-probe-windows-amd64.exe` на Windows.
+2. Открой PowerShell в папке с этим файлом.
+3. Выполни приведённые ниже команды целиком.
+4. Пришли полученный файл `golphi-windows-probe.txt`, даже если проверка завершится ошибкой. В журнал попадёт и код завершения программы.
 
 ```powershell
 $ErrorActionPreference = 'Stop'
@@ -22,8 +23,28 @@ $probeExit = $LASTEXITCODE
 if ($probeExit -ne 0) { throw "Native probe failed (exit $probeExit); preserve $log" }
 ```
 
-A successful result requires `PASS`, exit code 0, nonzero callback count, `own-window-seen=true`, identical startup/main/callback/cleanup thread IDs, a different worker thread ID, and successful `DestroyWindow=1`. Preserve the complete log even on failure. Confirm separately that the host is Windows 10 on native amd64 (Windows 11 also reports major version 10; its build is normally 22000 or greater). Run from a normal logged-in desktop, not a service or headless session. The native DPI query requires Windows 10 version 1607 or later; an unavailable API fails visibly.
+## Как выглядит успешный результат
 
-This is a focused native-call/callback/thread experiment. It does not implement `Form.Run`, a Win32 message loop, Go-to-UI posting, application events, or full shutdown behavior. A portable unit test and a successful cross-build do **not** establish Windows runtime correctness. Task 1.4 remains open until an actual target-host log records the required evidence.
+Проверка должна вывести:
 
-Documentation: [EnumWindows](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumwindows), [CreateWindowExW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-createwindowexw), [GetDpiForSystem](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdpiforsystem). Context7 was attempted first but failed with a transport error; these official Microsoft references were used as fallback.
+- `PASS` и код завершения `0`;
+- число callback больше нуля и `own-window-seen=true` — собственное окно найдено;
+- одинаковые идентификаторы потоков startup/main/callback/cleanup;
+- другой идентификатор потока worker;
+- `DestroyWindow=1` — окно успешно уничтожено.
+
+Сохрани полный журнал и при неудаче. Также подтверди, что проверка выполнена именно на Windows 10 с архитектурой amd64: Windows 11 тоже сообщает основную версию 10, но обычно имеет номер сборки 22000 или выше. Запускай программу из обычного сеанса рабочего стола, а не из службы или сеанса без графического интерфейса. Для запроса DPI требуется Windows 10 версии 1607 или новее; если API недоступен, программа сообщит об ошибке.
+
+## Самостоятельная сборка, если потребуется
+
+Для запуска готового `.exe` устанавливать Go или компилятор C не нужно. Чтобы самостоятельно собрать файл **на Linux из корня репозитория**, используй Go 1.26.5:
+
+```sh
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o /tmp/golphi-probe-windows-amd64.exe ./cmd/probe-windows
+```
+
+## Что проверяет этот эксперимент
+
+Это узкая проверка нативных вызовов, callback и потоков. Она ещё не реализует `Form.Run`, цикл обработки сообщений Win32, передачу задач из Go в UI, прикладные события или полный порядок завершения приложения. Успешные переносимые unit-тесты и кросс-компиляция **не подтверждают** корректность работы на Windows. Задача 1.4 остаётся открытой до получения журнала реального запуска на целевой машине.
+
+Документация: [EnumWindows](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumwindows), [CreateWindowExW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-createwindowexw), [GetDpiForSystem](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdpiforsystem). Сначала была предпринята попытка обращения к Context7, но она завершилась транспортной ошибкой; вместо него использованы эти официальные материалы Microsoft.
