@@ -1,6 +1,7 @@
-// Package ui is reserved for Golphi's native UI API.
+// Package ui предоставляет экспериментальные компоненты Golphi.
 //
-// The MVP implementation is in progress; this package does not yet expose UI
-// components. Native backends use direct operating system calls without a
-// project-owned C bridge.
+// Конструкторы готовят логические объекты без загрузки native-библиотек или
+// обращения к display. Импорт закрепляет startup thread для будущего Run.
+// MVP ограничен формой и статическим деревом Edit/Button/Label; см.
+// docs/components-mvp.md.
 package ui
