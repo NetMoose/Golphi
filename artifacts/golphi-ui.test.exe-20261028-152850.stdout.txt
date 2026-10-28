@@ -1,0 +1,132 @@
+=== RUN   TestNormalCloseCleanupFailures
+--- PASS: TestNormalCloseCleanupFailures (0.19s)
+=== RUN   TestPrepareAndReparent
+--- PASS: TestPrepareAndReparent (0.00s)
+=== RUN   TestFirstAttachmentFailurePreservesSettings
+--- PASS: TestFirstAttachmentFailurePreservesSettings (0.00s)
+=== RUN   TestDestroyCrossedOwnershipAndParenting
+--- PASS: TestDestroyCrossedOwnershipAndParenting (0.00s)
+=== RUN   TestDestroyedOperationsPanic
+--- PASS: TestDestroyedOperationsPanic (0.00s)
+=== RUN   TestIndividualDestroyUnlinksBothGraphs
+--- PASS: TestIndividualDestroyUnlinksBothGraphs (0.00s)
+=== RUN   TestAllControlsPrepareTextAndFormTitle
+--- PASS: TestAllControlsPrepareTextAndFormTitle (0.00s)
+=== RUN   TestEventsEffectiveAndSilent
+--- PASS: TestEventsEffectiveAndSilent (0.00s)
+=== RUN   TestEventsCoalescing
+=== RUN   TestEventsCoalescing/A
+=== RUN   TestEventsCoalescing/C
+--- PASS: TestEventsCoalescing (0.00s)
+    --- PASS: TestEventsCoalescing/A (0.00s)
+    --- PASS: TestEventsCoalescing/C (0.00s)
+=== RUN   TestEventsCancellationAndReplacement
+=== RUN   TestEventsCancellationAndReplacement/replace
+=== RUN   TestEventsCancellationAndReplacement/nil
+=== RUN   TestEventsCancellationAndReplacement/nil-inside
+=== RUN   TestEventsCancellationAndReplacement/reset
+=== RUN   TestEventsCancellationAndReplacement/destroy
+=== RUN   TestEventsCancellationAndReplacement/cascade
+=== RUN   TestEventsCancellationAndReplacement/detach
+=== RUN   TestEventsCancellationAndReplacement/failed-detach
+=== RUN   TestEventsCancellationAndReplacement/stop
+--- PASS: TestEventsCancellationAndReplacement (0.00s)
+    --- PASS: TestEventsCancellationAndReplacement/replace (0.00s)
+    --- PASS: TestEventsCancellationAndReplacement/nil (0.00s)
+    --- PASS: TestEventsCancellationAndReplacement/nil-inside (0.00s)
+    --- PASS: TestEventsCancellationAndReplacement/reset (0.00s)
+    --- PASS: TestEventsCancellationAndReplacement/destroy (0.00s)
+    --- PASS: TestEventsCancellationAndReplacement/cascade (0.00s)
+    --- PASS: TestEventsCancellationAndReplacement/detach (0.00s)
+    --- PASS: TestEventsCancellationAndReplacement/failed-detach (0.00s)
+    --- PASS: TestEventsCancellationAndReplacement/stop (0.00s)
+=== RUN   TestClickReplacementAndDestroyedGuard
+--- PASS: TestClickReplacementAndDestroyedGuard (0.00s)
+=== RUN   TestEventsResetAfterDisabledEdit
+--- PASS: TestEventsResetAfterDisabledEdit (0.00s)
+=== RUN   TestEventsAssignmentAfterDisabledEditIsSilent
+--- PASS: TestEventsAssignmentAfterDisabledEditIsSilent (0.00s)
+=== RUN   TestEventsPendingChangesUseFinalValue
+=== RUN   TestEventsPendingChangesUseFinalValue/A
+=== RUN   TestEventsPendingChangesUseFinalValue/D
+--- PASS: TestEventsPendingChangesUseFinalValue (0.00s)
+    --- PASS: TestEventsPendingChangesUseFinalValue/A (0.00s)
+    --- PASS: TestEventsPendingChangesUseFinalValue/D (0.00s)
+=== RUN   TestEventsDestroyedSettersGuardFirst
+--- PASS: TestEventsDestroyedSettersGuardFirst (0.00s)
+=== RUN   TestEventsCancelledQueueDoesNotCancelNewChange
+--- PASS: TestEventsCancelledQueueDoesNotCancelNewChange (0.00s)
+=== RUN   TestGeometryPreservesLogicalCoordinates
+--- PASS: TestGeometryPreservesLogicalCoordinates (0.00s)
+=== RUN   TestGeometryRejectsInvalidValuesWithoutMutation
+--- PASS: TestGeometryRejectsInvalidValuesWithoutMutation (0.00s)
+=== RUN   TestGeometryFrozenWhenRunStarts
+=== RUN   TestGeometryFrozenWhenRunStarts/component
+=== RUN   TestGeometryFrozenWhenRunStarts/owner
+=== RUN   TestGeometryFrozenWhenRunStarts/parent
+--- PASS: TestGeometryFrozenWhenRunStarts (0.00s)
+    --- PASS: TestGeometryFrozenWhenRunStarts/component (0.00s)
+    --- PASS: TestGeometryFrozenWhenRunStarts/owner (0.00s)
+    --- PASS: TestGeometryFrozenWhenRunStarts/parent (0.00s)
+=== RUN   TestGeometryDestroyedCheckPrecedesOtherValidation
+--- PASS: TestGeometryDestroyedCheckPrecedesOtherValidation (0.00s)
+=== RUN   TestNativeCoreIntegration
+=== RUN   TestNativeCoreIntegration/native-core
+    native_test.go:217: native readback: requested=70000 actual=70000
+        native core PASS: changes=8 closeRequests=0 released=3
+        
+--- PASS: TestNativeCoreIntegration (0.34s)
+    --- PASS: TestNativeCoreIntegration/native-core (0.34s)
+=== RUN   TestNormalCloseCancelsPendingDelivery
+--- PASS: TestNormalCloseCancelsPendingDelivery (0.01s)
+=== RUN   TestPanicFailurePath
+=== RUN   TestPanicFailurePath/panic-handler
+=== RUN   TestPanicFailurePath/panic-post
+=== RUN   TestPanicFailurePath/panic-destroyed-post
+=== RUN   TestPanicFailurePath/panic-handler-cleanup
+=== RUN   TestPanicFailurePath/panic-post-cleanup
+=== RUN   TestPanicFailurePath/panic-destroyed-post-cleanup
+=== RUN   TestPanicFailurePath/destroy-completion
+--- PASS: TestPanicFailurePath (0.05s)
+    --- PASS: TestPanicFailurePath/panic-handler (0.01s)
+    --- PASS: TestPanicFailurePath/panic-post (0.01s)
+    --- PASS: TestPanicFailurePath/panic-destroyed-post (0.01s)
+    --- PASS: TestPanicFailurePath/panic-handler-cleanup (0.01s)
+    --- PASS: TestPanicFailurePath/panic-post-cleanup (0.01s)
+    --- PASS: TestPanicFailurePath/panic-destroyed-post-cleanup (0.01s)
+    --- PASS: TestPanicFailurePath/destroy-completion (0.01s)
+=== RUN   TestPostLifecycle
+=== RUN   TestPostLifecycle/post-normal
+=== RUN   TestPostLifecycle/post-panic
+=== RUN   TestPostLifecycle/post-fail-init
+=== RUN   TestPostLifecycle/post-fail-create
+=== RUN   TestPostLifecycle/post-fail-text
+=== RUN   TestPostLifecycle/post-fail-show
+--- PASS: TestPostLifecycle (0.05s)
+    --- PASS: TestPostLifecycle/post-normal (0.01s)
+    --- PASS: TestPostLifecycle/post-panic (0.01s)
+    --- PASS: TestPostLifecycle/post-fail-init (0.01s)
+    --- PASS: TestPostLifecycle/post-fail-create (0.01s)
+    --- PASS: TestPostLifecycle/post-fail-text (0.01s)
+    --- PASS: TestPostLifecycle/post-fail-show (0.01s)
+=== RUN   TestRunProcessAdmission
+=== RUN   TestRunProcessAdmission/normal
+=== RUN   TestRunProcessAdmission/invalid
+=== RUN   TestRunProcessAdmission/failure
+=== RUN   TestRunProcessAdmission/destroyed
+--- PASS: TestRunProcessAdmission (0.03s)
+    --- PASS: TestRunProcessAdmission/normal (0.01s)
+    --- PASS: TestRunProcessAdmission/invalid (0.01s)
+    --- PASS: TestRunProcessAdmission/failure (0.01s)
+    --- PASS: TestRunProcessAdmission/destroyed (0.01s)
+=== RUN   TestStartupFailure
+=== RUN   TestStartupFailure/missing-library
+=== RUN   TestStartupFailure/missing-symbol
+=== RUN   TestStartupFailure/backend-init
+=== RUN   TestStartupFailure/create
+--- PASS: TestStartupFailure (0.03s)
+    --- PASS: TestStartupFailure/missing-library (0.01s)
+    --- PASS: TestStartupFailure/missing-symbol (0.01s)
+    --- PASS: TestStartupFailure/backend-init (0.01s)
+    --- PASS: TestStartupFailure/create (0.01s)
+PASS

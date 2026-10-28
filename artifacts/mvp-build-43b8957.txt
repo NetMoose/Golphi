@@ -1,0 +1,40 @@
+Source commit: 43b8957
+OUT=/tmp/golphi-mvp-final-build GOCACHE=/tmp/golphi-mvp-final-cold-cache GOMODCACHE=/tmp/golphi-gomodcache scripts/build-mvp.sh
+Minimal mount namespace: read-only project, Go toolchain, module cache; writable build cache/output.
+PASS: /usr /bin /lib /include absent; no C compiler or pkg-config in PATH
+go version go1.26.5 linux/amd64
+linux
+amd64
+0
+local
+off
+off
+github.com/NetMoose/Golphi
+github.com/ebitengine/purego v0.11.2
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -buildvcs=false -o /out/hello-linux-amd64 ./examples/hello
+/out/hello-linux-amd64: go1.26.5
+	path	github.com/NetMoose/Golphi/examples/hello
+	mod	github.com/NetMoose/Golphi	(devel)	
+	dep	github.com/ebitengine/purego	v0.11.2	h1:WWiTx8rD8zYdOwSj8O/NiNbsOvSAgJMTlyV1XlbUSeU=
+	build	-buildmode=exe
+	build	-compiler=gc
+	build	-trimpath=true
+	build	CGO_ENABLED=0
+	build	GOARCH=amd64
+	build	GOOS=linux
+	build	GOAMD64=v1
+PASS: linux repeated build is byte-identical
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -buildvcs=false -o /out/hello-windows-amd64.exe ./examples/hello
+/out/hello-windows-amd64.exe: go1.26.5
+	path	github.com/NetMoose/Golphi/examples/hello
+	mod	github.com/NetMoose/Golphi	(devel)	
+	build	-buildmode=exe
+	build	-compiler=gc
+	build	-trimpath=true
+	build	CGO_ENABLED=0
+	build	GOARCH=amd64
+	build	GOOS=windows
+	build	GOAMD64=v1
+PASS: windows repeated build is byte-identical
+55ad46764ed5218e1cef114ce09d2a31cfdb4abaa64bf7ff2f1e34f76207adeb  hello-linux-amd64
+12e73d5b7a586dd64301c814299eb4f48dacb781c220ba1d8821a0d26f627416  hello-windows-amd64.exe
