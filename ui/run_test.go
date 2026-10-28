@@ -61,9 +61,14 @@ func (d *runFake) Run(dispatch func() *backend.Panic) (*backend.Panic, error) {
 func (d *runFake) Quit()        { d.check() }
 func (d *runFake) Wake() error  { return nil }
 func (d *runFake) Close() error { d.check(); return nil }
+
+var extraScenarios = map[string]func(){}
+
 func TestMain(m *testing.M) {
 	if s := os.Getenv("GOLPHI_RUN_TEST"); s != "" {
-		if strings.HasPrefix(s, "post-") {
+		if fn := extraScenarios[s]; fn != nil {
+			fn()
+		} else if strings.HasPrefix(s, "post-") {
 			postScenario(s)
 		} else {
 			runScenario(s)
