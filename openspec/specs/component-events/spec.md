@@ -10,7 +10,7 @@
 
 Правила отложенной повторной доставки определены требованиями «Deferred and coalesced repeated changes», «Destruction cancels unstarted component notifications», «Detachment cancels pending text notifications», «Pending text notification follows the current handler», «Disabling cancels queued and accumulated text notifications» и «Comparison restarts after disabling» ниже; паника обработчика и аварийная остановка определены [спецификацией application-failure](../application-failure/spec.md). Принятие, выполнение и отмена обычных задач Post описаны [спецификацией post-dispatch](../post-dispatch/spec.md).
 
-Для узкого MVP сигнатуры button.SetOnClick(func()) / edit.SetOnChange(func()) и отмена уведомлений при обычном закрытии приняты в [активной дельте component-events](../../changes/implement-native-ui-mvp/specs/component-events/spec.md). Это переходная ссылка до отдельного sync/archive: Requirements ниже ещё не синхронизированы с MVP-дельтой и не доказывают полноту реализации. Сигнатуры других событий и Program/User, обычная остановка полной библиотеки вне MVP, порядок относительно Post/native events, взаимные изменения компонентов, новое накопление после отсоединения/присоединения внутри одного callback и прочие неописанные сочетания остаются открытыми.
+Для узкого MVP сигнатуры button.SetOnClick(func()) / edit.SetOnChange(func()) и отмена уведомлений при обычном закрытии определены требованиями ниже. Сигнатуры других событий и Program/User, обычная остановка полной библиотеки вне MVP, порядок относительно Post/native events, взаимные изменения компонентов, новое накопление после отсоединения/присоединения внутри одного callback и прочие неописанные сочетания остаются открытыми.
 
 ## Requirements
 
@@ -128,3 +128,21 @@ SetOnChange(nil) SHALL отменять ожидающее уведомлени�
 #### Scenario: Assignment alone does not notify
 - **WHEN** после отключения текст меняют без обработчика и затем назначают новый обработчик без нового изменения
 - **THEN** одно назначение не создаёт OnChange
+
+### Requirement: MVP event handler signatures
+MVP SHALL предоставлять button.SetOnClick(func()) и edit.SetOnChange(func()). Они SHALL сохранять правила одного обработчика, замены и nil. OnChange SHALL соблюдать прежние правила реального изменения, тихой подготовки, отложенного объединения, отмены и сброса базы; native-сигнал и SetText MUST NOT дублировать одно изменение.
+
+#### Scenario: Closure reads current text
+- **WHEN** пользователь нажимает кнопку, обработчик func() читает edit.Text() и меняет label.SetText()
+- **THEN** подпись отражает введённый текст, в том числе кириллицу, без параметра sender в обработчике
+
+#### Scenario: Programmatic change notified once
+- **WHEN** SetText меняет текст работающего присоединённого Edit и backend сообщает об этом native-сигналом
+- **THEN** прикладной OnChange вызывается по единому контракту изменения без дублирования уведомления
+
+### Requirement: Normal MVP shutdown cancels pending notifications
+При начале обычной остановки MVP Golphi SHALL отменять все ещё не начатые прикладные уведомления, включая ожидающий OnChange, и MUST NOT запускать новые прикладные обработчики. Уже выполняющийся вызов SHALL завершаться без принудительного прерывания; отменённые уведомления MUST NOT восстанавливаться во время очистки.
+
+#### Scenario: Close with queued text change
+- **WHEN** запрос закрытия обработан при ожидающем повторном OnChange
+- **THEN** уведомление отменяется и не доставляется при очистке
