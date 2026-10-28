@@ -7,7 +7,7 @@
 ## ADDED Requirements
 
 ### Requirement: Native MVP platform matrix
-MVP SHALL запускать один исходный пример с нативными Win32 controls на Windows 10/amd64 и GTK4 widgets на Linux Mint 22.3/amd64, glibc 2.39, GTK 4.14.5, GLib 2.80.0, Cinnamon/X11. Обе сборки SHALL использовать Go 1.26.5 и CGO_ENABLED=0 без C toolchain, GUI headers и pkg-config; Linux-запуск требует GTK4 runtime.
+MVP SHALL запускать один исходный пример с нативными Win32 controls на Windows 11/amd64 и GTK4 widgets на Linux Mint 22.3/amd64, glibc 2.39, GTK 4.14.5, GLib 2.80.0, Cinnamon/X11. Обе сборки SHALL использовать Go 1.26.5 и CGO_ENABLED=0 без C toolchain, GUI headers и pkg-config; Linux-запуск требует GTK4 runtime.
 
 #### Scenario: Build and run are separate evidence
 - **WHEN** одинаковый пример собирают для двух целевых ОС и запускают на каждой из согласованных конфигураций
