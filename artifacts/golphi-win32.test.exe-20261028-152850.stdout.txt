@@ -1,0 +1,19 @@
+=== RUN   TestWindowsAMD64ABI
+--- PASS: TestWindowsAMD64ABI (0.00s)
+=== RUN   TestNewDoesNotLoadNative
+--- PASS: TestNewDoesNotLoadNative (0.00s)
+=== RUN   TestWakeSurvivesNativeMessageDrain
+--- PASS: TestWakeSurvivesNativeMessageDrain (0.00s)
+=== RUN   TestDestroyFormRetiresChildren
+--- PASS: TestDestroyFormRetiresChildren (0.00s)
+=== RUN   TestCreateOverflowBeforeNativeAllocation
+--- PASS: TestCreateOverflowBeforeNativeAllocation (0.00s)
+=== RUN   TestUTF16
+--- PASS: TestUTF16 (0.00s)
+=== RUN   TestStartupScale
+--- PASS: TestStartupScale (0.00s)
+=== RUN   TestScaleRejectsOverflowBeforeMultiplication
+--- PASS: TestScaleRejectsOverflowBeforeMultiplication (0.00s)
+=== RUN   TestAdjustedFrameExtentRejectsOverflow
+--- PASS: TestAdjustedFrameExtentRejectsOverflow (0.00s)
+PASS
