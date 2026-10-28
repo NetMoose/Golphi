@@ -1,0 +1,9 @@
+=== RUN   TestNativeTreeContract
+    main_test.go:35: clip_pixels=true inside_changed=1200 outside_changed=0 snapshots=/tmp/golphi-tree-linux-{before,after}.png
+        outer=260x180 inner=140x90 huge=1200x600 no_growth=true clip_pick=true
+        move bounds=1:4 caret=4 focused=true
+        adjustments_initial=[0 0 0 0 0 0] adjustments_final=[0 0 0 0 0 0] no_auto_scroll=true fixed_coordinates=true replacement_text="А😀Б𐐷В"
+        selection=1:4 caret=4 text="А😀Б𐐷В" move_state=true recreate_state=true callbacks=1 callback_same_thread=true disconnect=true finalized=2
+--- PASS: TestNativeTreeContract (1.65s)
+PASS
+ok  	github.com/NetMoose/Golphi/cmd/probe-tree-linux	1.651s
