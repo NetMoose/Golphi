@@ -1,6 +1,8 @@
-# Точные Scope для отдельного sync/archive MVP
+# Исторический снимок Scope до синхронизации MVP
 
-Здесь сохранена окончательная формулировка Scope, которую необходимо сохранить при sync пяти MVP-дельт. Purpose и прежние Requirements/сценарии сохраняются; этот документ не выполняет sync. После архивации активные ссылки нужно заменить ссылками на архивное изменение.
+Здесь сохранён переходный снимок Scope, подготовленный до синхронизации пяти MVP-дельт. Это историческая запись, а не шаблон для повторного применения и не описание текущего состояния спецификаций. Текущие Scope и Requirements находятся в основных спецификациях: [application-failure](../openspec/specs/application-failure/spec.md), [post-dispatch](../openspec/specs/post-dispatch/spec.md), [component-events](../openspec/specs/component-events/spec.md), [native-ui-runtime](../openspec/specs/native-ui-runtime/spec.md) и [component-lifecycle](../openspec/specs/component-lifecycle/spec.md). Исходные дельты сохранены в [архиве MVP](../openspec/changes/archive/2026-10-28-implement-native-ui-mvp/proposal.md).
+
+Тексты в блоках ниже сохранены без обновления: упоминания активного изменения и несинхронизированных Requirements относятся к состоянию до sync/archive. Относительные пути внутри блоков показаны как исторический исходный текст Scope и не являются действующими ссылками этого документа. Открытые вопросы сохраняются.
 
 
 ## application-failure

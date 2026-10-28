@@ -18,9 +18,9 @@ Linux использует установленный системный GTK4 ru
 
 - [Текущий экспериментальный API и ограничения](docs/components-mvp.md)
 - [Общий дизайн и оставшиеся вопросы](docs/design.md)
-- [Принятый план MVP](openspec/changes/implement-native-ui-mvp/design.md)
-- [Точные переходные Scope для отдельного sync/archive](docs/mvp-scope-sync.md)
+- [Принятый план MVP](openspec/changes/archive/2026-10-28-implement-native-ui-mvp/design.md)
+- [Исторический снимок Scope до синхронизации](docs/mvp-scope-sync.md)
 
-Основные Requirements OpenSpec ещё не синхронизированы с активными MVP-дельтами; наличие реализации не означает выполнение всех сценариев полной библиотеки.
+Пять MVP-дельт синхронизированы с основными спецификациями OpenSpec; изменение архивировано 28 октября 2026 года. Наличие реализации не означает выполнение всех сценариев полной библиотеки.
 
 Лицензия: [MIT](LICENSE).
