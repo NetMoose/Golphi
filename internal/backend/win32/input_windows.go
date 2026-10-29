@@ -94,26 +94,29 @@ func (d *driver) rememberSelection(id backend.Peer, focused bool) error {
 		return nil
 	}
 	if focused {
+		knownBefore := p.selectionKnown
 		p.selectionKnown = false
 		d.peers[id] = p
 		var caret point
 		if _, err := d.call("GetCaretPos", uintptr(unsafe.Pointer(&caret))); err != nil {
 			return err
 		}
-		observe := func(offset uint32) caretObservation {
+		observe := func(offset uint32) (caretObservation, uint32) {
 			pos, _, _ := d.api["SendMessageW"].Call(p.hwnd, 0xd6, uintptr(offset), 0)
 			if int32(pos) == -1 {
-				return caretObservation{}
+				return caretObservation{}, uint32(pos)
 			}
-			return caretObservation{X: int32(int16(pos)), Y: int32(int16(pos >> 16)), Valid: true}
+			return caretObservation{X: int32(int16(pos)), Y: int32(int16(pos >> 16)), Valid: true}, uint32(pos)
 		}
 		cache := p.selectionObservation
 		if !((p.selectionAnchor == lo && p.selectionCaret == hi) || (p.selectionAnchor == hi && p.selectionCaret == lo)) {
 			cache = caretObservation{}
 		}
-		reverse, err := selectionDirection(caretObservation{X: caret.x, Y: caret.y, Valid: true}, observe(lo), observe(hi), cache, p.selectionCaret == lo)
+		low, lowRaw := observe(lo)
+		high, highRaw := observe(hi)
+		reverse, err := selectionDirection(caretObservation{X: caret.x, Y: caret.y, Valid: true}, low, high, cache, p.selectionCaret == lo)
 		if err != nil {
-			return err
+			return fmt.Errorf("native selection hwnd=%#x focused=%t utf16=[%d,%d] cached=[%d,%d] knownBefore=%t rawPositions=[%#x,%#x]: %w", p.hwnd, focused, lo, hi, p.selectionAnchor, p.selectionCaret, knownBefore, lowRaw, highRaw, err)
 		}
 		p.selectionAnchor = lo
 		p.selectionCaret = hi
@@ -144,7 +147,7 @@ func (d *driver) SnapshotInput(id backend.Peer) (backend.InputState, error) {
 	}
 	focus, _, _ := d.api["GetFocus"].Call()
 	if err = d.rememberSelection(id, focus == p.hwnd); err != nil {
-		return backend.InputState{}, err
+		return backend.InputState{}, fmt.Errorf("SnapshotInput peer=%d: %w", id, err)
 	}
 	p = d.peers[id]
 	a, err := utf16ToScalar(text, int(p.selectionAnchor))

@@ -112,3 +112,11 @@ GTK4 и Win32 реализуют Panel, Config.Input, SnapshotInput и тран�
 Fake fault injection, API-boundary fault injection, старые токены и реальные native-сигналы различены в отчётах. Не добавлены обещания для IME, Wayland, DPI switching, нескольких форм, cleanup retry и остальных открытых вопросов. До фактической Windows-проверки задачи 4.2–4.4 и общий этап приёмки остаются открытыми.
 
 Независимое review GTK после исправлений — PASS; review Win32 одобряет готовность к нативному запуску. Общий integration checkpoint — PASS. Подсказка runner дополнена путём инструкции внутри архива. Strict validation изменения и пяти основных specs, `git diff --check` — PASS. Завершена задача 4.1; Windows-зависимые пункты не отмечены выполненными.
+
+### Полученный отказ Windows — 2026-10-29
+
+Пользователь запустил автоматическую проверку на Windows build 26100. Хеши backend/UI совпали с manifest переданного пакета. `TestNativeDynamicTreeWin32` завершился FAIL на `tree_native_windows_test.go:120`: `selection direction cannot be established unambiguously`, `EXIT_CODE=1`. Это сценарий сфокусированного обратного выделения перед прямым переносом. [Журнал](../artifacts/dynamic-tree-windows-failure-20261029/backend-native.log.txt) сохранён с декодированием UTF-16 в UTF-8; [окружение](../artifacts/dynamic-tree-windows-failure-20261029/environment.txt) — с нормализацией UTF-8 BOM.
+
+Исключение PowerShell на скриншоте сообщает о ненулевом коде теста; это не ошибка разбора `.ps1`. Отдельно исправлена кодировка русского runner: UTF-8 с BOM, правило закреплено в AGENTS.md. Windows-приёмка остаётся открытой; исходный краткий журнал не различает фазу снимка и не содержит native-координат, поэтому сам по себе не устанавливает причину неоднозначности.
+
+Подготовлен отдельный `artifacts/golphi-dynamic-native-windows-diagnostic.zip` с фазами отказа и read-only native-трассировкой. [Новый manifest](../artifacts/dynamic-tree-native-diagnostic-build.txt). Это диагностическая сборка, не подтверждённое исправление выделения. Полный CGO_ENABLED=0 набор тестов и Linux/Windows vet прошли; Windows test EXE пересобраны. Требуется повторный автоматический запуск, ручная проверка пока не нужна.

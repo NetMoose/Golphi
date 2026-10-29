@@ -50,7 +50,7 @@ func (d *driver) PrepareTree(c backend.TreeChange) (backend.TreeTransaction, err
 			if p.kind == backend.Edit {
 				s, err := d.SnapshotInput(n.Peer)
 				if err != nil {
-					return tx, err
+					return tx, fmt.Errorf("PrepareTree snapshot node=%d peer=%d: %w", n.ID, n.Peer, err)
 				}
 				tx.input[n.Peer] = s
 			}
@@ -88,7 +88,7 @@ func (tx *treeTransaction) Commit() (backend.TreeResult, error) {
 			if n.Kind == backend.Edit {
 				s, err := d.SnapshotInput(id)
 				if err != nil {
-					return backend.TreeResult{}, err
+					return backend.TreeResult{}, fmt.Errorf("Commit snapshot node=%d peer=%d before placement: %w", n.ID, id, err)
 				}
 				binding.Input = &s
 			}
@@ -117,7 +117,7 @@ func (tx *treeTransaction) Commit() (backend.TreeResult, error) {
 	if c.FromAttached && c.ToAttached {
 		for id, s := range tx.input {
 			if err := d.restoreInput(id, s); err != nil {
-				return backend.TreeResult{}, err
+				return backend.TreeResult{}, fmt.Errorf("Commit restore input peer=%d after placement: %w", id, err)
 			}
 		}
 	}
@@ -193,7 +193,7 @@ func (tx *treeTransaction) Rollback() (err error) {
 		d.api["ShowWindow"].Call(tx.oldRoot.hwnd, 4)
 		for id, s := range tx.input {
 			if e := d.restoreInput(id, s); e != nil {
-				errs = append(errs, e)
+				errs = append(errs, fmt.Errorf("Rollback restore input peer=%d: %w", id, e))
 			}
 		}
 	}

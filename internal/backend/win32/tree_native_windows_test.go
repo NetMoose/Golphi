@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 	"testing"
+	"unsafe"
 )
 
 func TestNativeDynamicTreeWin32(t *testing.T) {
@@ -113,11 +114,15 @@ func TestNativeDynamicTreeWin32(t *testing.T) {
 		t.Fatal("move stole outside focus")
 	}
 	// Focused reverse selection uses native caret direction, not ordered EM_GETSEL.
+	logNativeInputEvidence(t, d, node.Peer, "before-SetFocus")
 	d.api["SetFocus"].Call(d.peers[node.Peer].hwnd)
+	logNativeInputEvidence(t, d, node.Peer, "after-SetFocus-before-EM_SETSEL")
 	if err := d.restoreInput(node.Peer, want); err != nil {
 		t.Fatal(err)
 	}
+	logNativeInputEvidence(t, d, node.Peer, "after-EM_SETSEL-before-ApplyTree")
 	apply(backend.TreeChange{FromAttached: true, ToAttached: true, Target: a, Nodes: []backend.TreeNode{node}})
+	logNativeInputEvidence(t, d, node.Peer, "after-ApplyTree-before-SnapshotInput")
 	focused, err := d.SnapshotInput(node.Peer)
 	expected := want
 	expected.Focused = true
@@ -216,4 +221,18 @@ func TestNativeDynamicTreeWin32(t *testing.T) {
 		t.Fatal("retirement registry retained")
 	}
 
+}
+
+// Reads only: diagnostics must not change focus/selection, pump messages, sleep,
+// or replace the original operation under investigation.
+func logNativeInputEvidence(t *testing.T, d *driver, id backend.Peer, phase string) {
+	t.Helper()
+	p := d.peers[id]
+	lo, hi := d.selection(p.hwnd)
+	focus, _, _ := d.api["GetFocus"].Call()
+	var cp point
+	ok, _, caretErr := d.api["GetCaretPos"].Call(uintptr(unsafe.Pointer(&cp)))
+	low, _, _ := d.api["SendMessageW"].Call(p.hwnd, 0xd6, uintptr(lo), 0)
+	high, _, _ := d.api["SendMessageW"].Call(p.hwnd, 0xd6, uintptr(hi), 0)
+	t.Logf("NATIVE_INPUT phase=%s peer=%d hwnd=%#x focus=%#x dpi=%d utf16=[%d,%d] caretOK=%d caretErr=%v caret=(%d,%d) lowRaw=%#x low=(%d,%d) highRaw=%#x high=(%d,%d) cached=[%d,%d] known=%t cache=%+v", phase, id, p.hwnd, focus, d.dpi, lo, hi, ok, caretErr, cp.x, cp.y, uint32(low), int16(low), int16(low>>16), uint32(high), int16(high), int16(high>>16), p.selectionAnchor, p.selectionCaret, p.selectionKnown, p.selectionObservation)
 }

@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$BackendExe = "",
     [string]$UIExe = "",
     [string]$LogDirectory = "artifacts/dynamic-tree-windows",

@@ -1,0 +1,5 @@
+=== RUN   TestNativeDynamicTreeWin32
+    tree_native_windows_test.go:120: win32: selection direction cannot be established unambiguously
+--- FAIL: TestNativeDynamicTreeWin32 (0.04s)
+FAIL
+EXIT_CODE=1

@@ -60,5 +60,5 @@ func selectionDirection(caret, low, high, cache caretObservation, cachedReverse 
 		!(!cachedReverse && low.Valid && caret == low) {
 		return cachedReverse, nil
 	}
-	return false, fmt.Errorf("win32: selection direction cannot be established unambiguously")
+	return false, fmt.Errorf("win32: selection direction cannot be established unambiguously: caret=%+v low=%+v high=%+v cache=%+v cachedReverse=%t", caret, low, high, cache, cachedReverse)
 }

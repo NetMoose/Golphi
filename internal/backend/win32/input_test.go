@@ -1,6 +1,9 @@
 package win32
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestSelectionScalarUTF16(t *testing.T) {
 	const s = "Я🌍е́Z"
@@ -52,5 +55,17 @@ func TestSelectionDirectionRequiresEvidence(t *testing.T) {
 				t.Fatalf("got %v %v", got, err)
 			}
 		})
+	}
+}
+
+func TestSelectionDirectionDiagnosticPreservesObservations(t *testing.T) {
+	_, err := selectionDirection(caretObservation{X: 17, Y: 3, Valid: true}, caretObservation{X: 10, Y: 2, Valid: true}, caretObservation{X: 40, Y: 2, Valid: true}, caretObservation{X: 16, Y: 3, Valid: true}, true)
+	if err == nil {
+		t.Fatal("ambiguous observations accepted")
+	}
+	for _, part := range []string{"caret={X:17 Y:3 Valid:true}", "low={X:10 Y:2 Valid:true}", "high={X:40 Y:2 Valid:true}", "cache={X:16 Y:3 Valid:true}", "cachedReverse=true"} {
+		if !strings.Contains(err.Error(), part) {
+			t.Fatalf("diagnostic missing %q: %v", part, err)
+		}
 	}
 }
