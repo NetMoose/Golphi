@@ -1,0 +1,16 @@
+=== RUN   TestNativeEditKeyboardSelectionProbe
+EDIT_KEYBOARD_PROBE mode restore_focus=true
+EDIT_KEYBOARD_PROBE instructions: click ABCDEF; End; Left once; Shift+Left THREE times; release Shift; F8. Wait for phase=later-dispatched-fence, then Shift+Right ONCE; release Shift; F9. Do not click or type into console. If focus is lost after move, record that fact; clicking Edit to continue contaminates continuation evidence.
+EDIT_KEYBOARD_PROBE phase=before hwnd=0x3051e peerHWND=0x3051e parent=0x2056a focus=0x3051e rangeUTF16=[2,5] caretOK=1 caretXY=(20,2) lowRaw=0x14 highRaw=0x30 lower=true text="ABCDEF" textErr=<nil>
+EDIT_KEYBOARD_PROBE phase=immediate hwnd=0x3051e peerHWND=0x3051e parent=0x30538 focus=0x2056a rangeUTF16=[2,5] caretOK=1 caretXY=(20,2) lowRaw=0x14 highRaw=0x30 lower=true text="ABCDEF" textErr=<nil>
+EDIT_KEYBOARD_PROBE phase=after-SetFocus-before-fence hwnd=0x3051e peerHWND=0x3051e parent=0x30538 focus=0x3051e rangeUTF16=[2,5] caretOK=1 caretXY=(20,2) lowRaw=0x14 highRaw=0x30 lower=true text="ABCDEF" textErr=<nil>
+EDIT_KEYBOARD_PROBE phase=focus-message-0x8 hwnd=0x3051e peerHWND=0x3051e parent=0x30538 focus=0x3051e rangeUTF16=[2,5] caretOK=1 caretXY=(20,2) lowRaw=0x14 highRaw=0x30 lower=true text="ABCDEF" textErr=<nil>
+EDIT_KEYBOARD_PROBE phase=focus-message-0x7 hwnd=0x3051e peerHWND=0x3051e parent=0x30538 focus=0x3051e rangeUTF16=[2,5] caretOK=1 caretXY=(20,2) lowRaw=0x14 highRaw=0x30 lower=true text="ABCDEF" textErr=<nil>
+EDIT_KEYBOARD_PROBE phase=later-dispatched-fence hwnd=0x3051e peerHWND=0x3051e parent=0x30538 focus=0x3051e rangeUTF16=[2,5] caretOK=1 caretXY=(20,2) lowRaw=0x14 highRaw=0x30 lower=true text="ABCDEF" textErr=<nil>
+EDIT_KEYBOARD_PROBE continue: Shift+Right ONCE, release Shift, F9
+EDIT_KEYBOARD_PROBE phase=after-real-shift-right-keyup hwnd=0x3051e peerHWND=0x3051e parent=0x30538 focus=0x3051e rangeUTF16=[3,5] caretOK=1 caretXY=(29,2) lowRaw=0x1d highRaw=0x30 lower=true text="ABCDEF" textErr=<nil>
+EDIT_KEYBOARD_PROBE phase=final-F9-keyup hwnd=0x3051e peerHWND=0x3051e parent=0x30538 focus=0x3051e rangeUTF16=[3,5] caretOK=1 caretXY=(29,2) lowRaw=0x1d highRaw=0x30 lower=true text="ABCDEF" textErr=<nil>
+EDIT_KEYBOARD_SELECTION_PROBE_COMPLETE diagnostic_only=true production_acceptance=false restore_focus=true before_anchor=5 before_caret=2 continuation_performed=true expected_continuation_range=[3,5] expected_continuation_caret=3 focus_events_after_move=2 continuation_matches=true
+--- PASS: TestNativeEditKeyboardSelectionProbe (34.60s)
+PASS
+EXIT_CODE=0

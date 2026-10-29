@@ -14,14 +14,16 @@ import (
 	"github.com/NetMoose/Golphi/internal/backend"
 )
 
-// Diagnostic only. The operator supplies real keyboard input. No EM_SETSEL,
-// SnapshotInput, restoreInput, or synthetic keyboard input is used.
+// The operator supplies real keyboard input. Transaction mode exercises the
+// production ApplyTree path; other modes remain placement diagnostics. The
+// probe never creates a reverse range with EM_SETSEL or synthetic keyboard input.
 func TestNativeEditKeyboardSelectionProbe(t *testing.T) {
 	if os.Getenv("GOLPHI_EDIT_KEYBOARD_PROBE") != "1" {
 		t.Skip("set GOLPHI_EDIT_KEYBOARD_PROBE=1 on interactive Windows amd64")
 	}
+	transaction := os.Getenv("GOLPHI_EDIT_KEYBOARD_TRANSACTION") == "1"
 	restoreFocus := os.Getenv("GOLPHI_EDIT_KEYBOARD_RESTORE_FOCUS") == "1"
-	fmt.Printf("EDIT_KEYBOARD_PROBE mode restore_focus=%t\n", restoreFocus)
+	fmt.Printf("EDIT_KEYBOARD_PROBE mode restore_focus=%t transaction=%t\n", restoreFocus, transaction)
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	d := New().(*driver)
@@ -66,7 +68,12 @@ func TestNativeEditKeyboardSelectionProbe(t *testing.T) {
 	var rightShift bool
 	var rightCount int
 	var rightRepeated bool
+	setSelectionCount := 0
+	countSelection := false
 	hook := syscall.NewCallback(func(h uintptr, msg uint32, w, l uintptr) uintptr {
+		if countSelection && msg == 0xb1 {
+			setSelectionCount++
+		}
 		// Always delegate first, including our fence; observations and mutations run
 		// after DispatchMessageW returns, in d.Run's application dispatch.
 		if msg == 0x100 && w != 0x10 && w != 0x27 && w != 0x78 {
@@ -195,13 +202,24 @@ func TestNativeEditKeyboardSelectionProbe(t *testing.T) {
 					fmt.Println("EDIT_KEYBOARD_PROBE_REJECT F8 requires native ABCDEF range=[2,5], focused caret at lower endpoint; retry End then Left once then Shift+Left three times")
 					continue
 				}
-				if err := d.place(edit, right, backend.Bounds{X: 5, Y: 5, Width: 280, Height: 35}); err != nil {
+				if transaction {
+					countSelection = true
+					failure := backend.ApplyTree(d, backend.TreeChange{FromAttached: true, ToAttached: true, Target: right, Nodes: []backend.TreeNode{{ID: 1, Peer: edit, Kind: backend.Edit, Bounds: backend.Bounds{X: 5, Y: 5, Width: 280, Height: 35}}}}, func(backend.TreeResult) {}, func(f *backend.TreeFailure) { workflowErr = f })
+					if failure != nil {
+						fail(failure)
+						return nil
+					}
+				} else if err := d.place(edit, right, backend.Bounds{X: 5, Y: 5, Width: 280, Height: 35}); err != nil {
 					fail(err)
 					return nil
 				}
 				moved = true
-				observe("immediate")
-				if restoreFocus {
+				immediate := observe("immediate")
+				if transaction && (observationErr != nil || immediate != before || setSelectionCount != 0 || d.peers[edit].hwnd != hwnd) {
+					fail(fmt.Errorf("transaction immediate mismatch: before=%+v after=%+v EM_SETSEL=%d read=%v", before, immediate, setSelectionCount, observationErr))
+					return nil
+				}
+				if restoreFocus && !transaction {
 					// SetFocus returns the previous focus, so verify the new focus
 					// directly. This mode never repairs selection or text.
 					d.api["SetFocus"].Call(hwnd)
@@ -232,6 +250,10 @@ func TestNativeEditKeyboardSelectionProbe(t *testing.T) {
 						fail(observationErr)
 						return nil
 					}
+					if transaction && (after.lo != 2 || after.hi != 5 || !after.lower || !after.focused || after.text != "ABCDEF" || setSelectionCount != 0) {
+						fail(fmt.Errorf("transaction fence mismatch: %+v EM_SETSEL=%d", after, setSelectionCount))
+						return nil
+					}
 					if !after.focused {
 						completed = true
 						fmt.Printf("EDIT_KEYBOARD_SELECTION_PROBE_COMPLETE diagnostic_only=true production_acceptance=false restore_focus=%t continuation_performed=false reason=focus-lost-after-move\n", restoreFocus)
@@ -259,13 +281,22 @@ func TestNativeEditKeyboardSelectionProbe(t *testing.T) {
 				}
 			case "finish":
 				if moved && later && continued {
-					observe("final-F9-keyup")
+					final := observe("final-F9-keyup")
+					if transaction && (final != continuation || d.peers[edit].hwnd != hwnd) {
+						fail(fmt.Errorf("transaction final mismatch: continuation=%+v final=%+v", continuation, final))
+						return nil
+					}
 					if observationErr != nil {
 						fail(observationErr)
 						return nil
 					}
+					matches := continuation.lo == 3 && continuation.hi == 5 && continuation.lower && continuation.focused && continuation.text == "ABCDEF"
+					if transaction && (!matches || setSelectionCount != 0) {
+						fail(fmt.Errorf("transaction continuation mismatch: %+v EM_SETSEL=%d", continuation, setSelectionCount))
+						return nil
+					}
 					completed = true
-					fmt.Printf("EDIT_KEYBOARD_SELECTION_PROBE_COMPLETE diagnostic_only=true production_acceptance=false restore_focus=%t before_anchor=5 before_caret=2 continuation_performed=true expected_continuation_range=[3,5] expected_continuation_caret=3 focus_events_after_move=%d continuation_matches=%t\n", restoreFocus, focusEventsAfterMove, continuation.lo == 3 && continuation.hi == 5 && continuation.lower && continuation.focused && continuation.text == "ABCDEF")
+					fmt.Printf("EDIT_KEYBOARD_SELECTION_PROBE_COMPLETE transaction=%t diagnostic_only=%t production_acceptance=false retained_hwnd_integration=%t restore_focus=%t before_anchor=5 before_caret=2 continuation_performed=true expected_continuation_range=[3,5] expected_continuation_caret=3 focus_events_after_move=%d continuation_matches=%t\n", transaction, !transaction, transaction, restoreFocus, focusEventsAfterMove, matches)
 					d.Quit()
 				} else {
 					fmt.Println("EDIT_KEYBOARD_PROBE_REJECT F9: need valid F8, dispatched fence, one Shift+Right")

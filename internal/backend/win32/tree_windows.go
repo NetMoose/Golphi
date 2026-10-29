@@ -115,10 +115,8 @@ func (tx *treeTransaction) Commit() (backend.TreeResult, error) {
 		}
 	}
 	if c.FromAttached && c.ToAttached {
-		for id, s := range tx.input {
-			if err := d.restoreInput(id, s); err != nil {
-				return backend.TreeResult{}, fmt.Errorf("Commit restore input peer=%d after placement: %w", id, err)
-			}
+		if err := tx.verifyRetainedInput("Commit after placement"); err != nil {
+			return backend.TreeResult{}, err
 		}
 	}
 	tx.committed = true
@@ -176,6 +174,25 @@ func (tx *treeTransaction) restoreFocus(rollback bool) error {
 	}
 	return nil
 }
+
+// Existing HWNDs retain their selection, including its active endpoint. Reapplying
+// EM_SETSEL can destroy that direction, so restore focus first and certify the
+// original state by readback rather than trying to reconstruct it.
+func (tx *treeTransaction) verifyRetainedInput(phase string) error {
+	var errs []error
+	for id, want := range tx.input {
+		got, err := tx.d.SnapshotInput(id)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("%s retained input peer=%d readback: %w", phase, id, err))
+			continue
+		}
+		if got != want {
+			errs = append(errs, fmt.Errorf("%s retained input peer=%d mismatch: expected=%+v observed=%+v", phase, id, want, got))
+		}
+	}
+	return errors.Join(errs...)
+}
+
 func (tx *treeTransaction) Rollback() (err error) {
 	tx.committed = false
 	defer func() {
@@ -191,13 +208,11 @@ func (tx *treeTransaction) Rollback() (err error) {
 			errs = append(errs, e)
 		}
 		d.api["ShowWindow"].Call(tx.oldRoot.hwnd, 4)
-		for id, s := range tx.input {
-			if e := d.restoreInput(id, s); e != nil {
-				errs = append(errs, fmt.Errorf("Rollback restore input peer=%d: %w", id, e))
-			}
-		}
 	}
 	if e := tx.restoreFocus(true); e != nil {
+		errs = append(errs, e)
+	}
+	if e := tx.verifyRetainedInput("Rollback after focus restoration"); e != nil {
 		errs = append(errs, e)
 	}
 	return errors.Join(errs...)
