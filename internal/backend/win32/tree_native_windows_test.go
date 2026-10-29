@@ -129,6 +129,26 @@ func TestNativeDynamicTreeWin32(t *testing.T) {
 	if err != nil || focused != expected {
 		t.Fatalf("focused reverse move: %+v %v", focused, err)
 	}
+	// Switching direction while retaining the same ordered range must change
+	// the real active endpoint, not merely its cached label.
+	for _, ends := range [][2]int{{1, 4}, {4, 1}, {1, 4}, {4, 1}} {
+		state := want
+		state.Anchor = ends[0]
+		state.Caret = ends[1]
+		if err := d.restoreInput(node.Peer, state); err != nil {
+			t.Fatalf("same-range restore %v: %v", ends, err)
+		}
+		logNativeInputEvidence(t, d, node.Peer, "same-ordered-range-after-verified-restore")
+		lo, hi := d.selection(d.peers[node.Peer].hwnd)
+		if lo != 1 || hi != 6 {
+			t.Fatalf("same-range UTF16 changed: [%d,%d]", lo, hi)
+		}
+		observed, err := d.SnapshotInput(node.Peer)
+		state.Focused = true
+		if err != nil || observed != state {
+			t.Fatalf("same-range direction %v: %+v %v", ends, observed, err)
+		}
+	}
 	// Native forward/reverse selections reaching the end of text exercise the
 	// trusted explicit EM_SETSEL observation when EM_POSFROMCHAR(end) is unavailable.
 	for _, ends := range [][2]int{{1, 5}, {5, 1}} {

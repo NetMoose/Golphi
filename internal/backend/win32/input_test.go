@@ -69,3 +69,26 @@ func TestSelectionDirectionDiagnosticPreservesObservations(t *testing.T) {
 		}
 	}
 }
+
+func TestSingleLineDirectionObservedWindowsRegression(t *testing.T) {
+	low := caretObservation{X: 10, Y: 0, Valid: true}
+	high := caretObservation{X: 35, Y: 0, Valid: true}
+	for _, tc := range []struct {
+		name                            string
+		caret, lo, hi, cache            caretObservation
+		reverse, wantReverse, wantError bool
+	}{
+		{"observed high contradicts reverse cache", caretObservation{X: 35, Y: 2, Valid: true}, low, high, caretObservation{X: 35, Y: 2, Valid: true}, true, false, false},
+		{"observed low despite vertical offset", caretObservation{X: 10, Y: 2, Valid: true}, low, high, caretObservation{}, false, true, false},
+		{"equal X different Y remains ambiguous", caretObservation{X: 10, Y: 2, Valid: true}, low, caretObservation{X: 10, Y: 4, Valid: true}, caretObservation{}, false, false, true},
+		{"neither X", caretObservation{X: 20, Y: 2, Valid: true}, low, high, caretObservation{}, false, false, true},
+		{"unknown end without trusted observation", caretObservation{X: 50, Y: 2, Valid: true}, low, caretObservation{}, caretObservation{}, false, false, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := singleLineSelectionDirection(tc.caret, tc.lo, tc.hi, tc.cache, tc.reverse)
+			if (err != nil) != tc.wantError || err == nil && got != tc.wantReverse {
+				t.Fatalf("got %v %v", got, err)
+			}
+		})
+	}
+}

@@ -1,0 +1,8 @@
+=== RUN   TestNativeDynamicTreeWin32
+    tree_native_windows_test.go:117: NATIVE_INPUT phase=before-SetFocus peer=6 hwnd=0x20636 focus=0x20638 dpi=96 utf16=[1,6] caretOK=1 caretErr=The operation completed successfully. caret=(0,0) lowRaw=0xa low=(10,0) highRaw=0x23 high=(35,0) cached=[6,1] known=true cache={X:0 Y:0 Valid:false}
+    tree_native_windows_test.go:119: NATIVE_INPUT phase=after-SetFocus-before-EM_SETSEL peer=6 hwnd=0x20636 focus=0x20636 dpi=96 utf16=[1,6] caretOK=1 caretErr=The operation completed successfully. caret=(35,2) lowRaw=0xa low=(10,0) highRaw=0x23 high=(35,0) cached=[6,1] known=true cache={X:0 Y:0 Valid:false}
+    tree_native_windows_test.go:123: NATIVE_INPUT phase=after-EM_SETSEL-before-ApplyTree peer=6 hwnd=0x20636 focus=0x20636 dpi=96 utf16=[1,6] caretOK=1 caretErr=The operation completed successfully. caret=(35,2) lowRaw=0xa low=(10,0) highRaw=0x23 high=(35,0) cached=[6,1] known=true cache={X:35 Y:2 Valid:true}
+    tree_native_windows_test.go:124: PrepareTree snapshot node=1 peer=6: SnapshotInput peer=6: native selection hwnd=0x20636 focused=true utf16=[1,6] cached=[6,1] knownBefore=true rawPositions=[0xa,0x23]: win32: selection direction cannot be established unambiguously: caret={X:35 Y:2 Valid:true} low={X:10 Y:0 Valid:true} high={X:35 Y:0 Valid:true} cache={X:35 Y:2 Valid:true} cachedReverse=true
+--- FAIL: TestNativeDynamicTreeWin32 (0.05s)
+FAIL
+EXIT_CODE=1

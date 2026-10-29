@@ -62,3 +62,19 @@ func selectionDirection(caret, low, high, cache caretObservation, cachedReverse 
 	}
 	return false, fmt.Errorf("win32: selection direction cannot be established unambiguously: caret=%+v low=%+v high=%+v cache=%+v cachedReverse=%t", caret, low, high, cache, cachedReverse)
 }
+
+func singleLineSelectionDirection(caret, low, high, cache caretObservation, cachedReverse bool) (bool, error) {
+	// Golphi creates only single-line EDIT (no ES_MULTILINE). The caret
+	// bitmap and glyph origins can have different Y offsets (observed 2 vs 0
+	// at 96 DPI); direction is determined by distinct positions on this one line.
+	rawCaret, rawLow, rawHigh, rawCache := caret, low, high, cache
+	caret.Y = 0
+	low.Y = 0
+	high.Y = 0
+	cache.Y = 0
+	reverse, err := selectionDirection(caret, low, high, cache, cachedReverse)
+	if err != nil {
+		return false, fmt.Errorf("single-line rawCaret=%+v rawLow=%+v rawHigh=%+v rawCache=%+v: %w", rawCaret, rawLow, rawHigh, rawCache, err)
+	}
+	return reverse, nil
+}

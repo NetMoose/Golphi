@@ -1,0 +1,4 @@
+Win32 selection fix candidate 2026-10-29; actual Windows execution pending.
+Go1.26.5; GOOS=windows GOARCH=amd64 CGO_ENABLED=0; go test -c -buildvcs=false ./internal/backend/win32 and ./ui
+2b55851be89ee3ab8960d009e97c6b23ce7434cb8c6e9eb2e75cb94ff2f1643a  golphi-win32.test.exe
+95b5db27cc15f2e52e0124f014d8d9314acf09ec6cb3dc981042214ff8c7b1ef  golphi-ui.test.exe
