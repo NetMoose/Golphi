@@ -1,0 +1,3 @@
+Diagnostic-only operator keyboard experiment: not native acceptance.
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go test -c -buildvcs=false ./internal/backend/win32
+592701b7b6f94fbdc67ca0eac2822125cea8526a068c6a44c2512fb40115bcf9  golphi-win32.test.exe

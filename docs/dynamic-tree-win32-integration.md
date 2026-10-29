@@ -219,3 +219,30 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\probe-edit-selecti
 `artifacts/edit-selection-probe`, включая неуспешный запуск. Во время короткого
 теста не переключать фокус. Тайм-аут — 60 секунд. Нужен результат на Windows;
 cross-build и vet подтверждают только подготовку исполняемого файла.
+
+
+## Выделение клавиатурой и перенос HWND — 2026-10-29
+
+[Изолированная проба](../artifacts/edit-selection-probe-windows-20261029/selection-probe.log.txt)
+завершила 24 случая, exit code 0; [SHA256 и окружение](../artifacts/edit-selection-probe-windows-20261029/environment.txt)
+совпали с пакетом. На Windows build 26100 / DPI 96 обычный EDIT и EDIT с
+обработкой Golphi показали одинаковые результаты. Прямой и обратный EM_SETSEL,
+включая collapse-then-set, оставляют каретку у верхней границы для ASCII и
+строки с суррогатными парами. EM_GETCARETINDEX возвращает 0 даже при свёрнутой
+каретке в ненулевой позиции; EM_SETCARETINDEX видимого изменения не даёт.
+В этой конфигурации использовать их как достоверное чтение/восстановление нельзя.
+
+Следующий диагностический эксперимент: оператор создаёт `[2,5]` в `ABCDEF`
+через End, Left и три Shift+Left, запускает F8 с фокусом в Edit. Тот же HWND
+переносится `place` между панелями без `restoreInput` и EM_SETSEL. Читаем native
+состояние до, сразу после и после прохождения опубликованного сообщения через
+очередь Windows. Затем оператор нажимает Shift+Right один раз и F9: `[3,5]`
+с кареткой на нижней границе проверяет продолжение изменения нужного конца.
+Негативный результат сохраняется как наблюдение; PASS означает завершение
+диагностики. Это не весь production ApplyTree: он пока вызывает restoreInput.
+Код библиотеки, OpenSpec checkbox и остальные открытые вопросы не меняются.
+
+Пакет `artifacts/golphi-edit-keyboard-selection-probe-windows.zip` содержит
+русскую инструкцию и `scripts/probe-edit-keyboard-selection-windows.ps1` в
+UTF-8 с BOM. После запуска передать оба файла из
+`artifacts/edit-keyboard-selection-probe`, в том числе при неуспешном завершении.
