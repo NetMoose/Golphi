@@ -26,7 +26,7 @@ func (f *Form) Run() (err error) {
 	}
 	runActive.Store(true)
 	defer runActive.Store(false)
-	r := &application{form: f, peers: make(map[*component]backend.Peer), components: make(map[backend.Peer]*component)}
+	r := &application{form: f, peers: make(map[*component]backend.Peer), components: make(map[backend.Peer]*component), bindingGenerations: make(map[backend.Peer]uint64)}
 	r.participants = append(r.participants, &f.component)
 	// Include detached owned controls for latching and event cancellation, but
 	// create peers only for the visual children of this single main window.
@@ -90,7 +90,7 @@ func (f *Form) Run() (err error) {
 				bounds.Width, bounds.Height = 120, 28
 			}
 		}
-		cfg := backend.Config{Kind: c.kind, Text: c.text, Bounds: bounds}
+		cfg := backend.Config{Kind: c.kind, Text: c.text, Bounds: bounds, Input: c.copySavedInput()}
 		if c.parent != nil {
 			cfg.Parent = r.peers[c.parent.componentIdentity()]
 		}
@@ -115,6 +115,7 @@ func (f *Form) Run() (err error) {
 			return e
 		}
 		c.text = actual
+		c.savedInput = nil
 		if r.failed {
 			return nil
 		}
@@ -127,7 +128,7 @@ func (f *Form) Run() (err error) {
 			return nil
 		}
 	}
-	for _, c := range r.created {
+	for _, c := range r.participants {
 		c.runtime = r
 	}
 	if r.failed {
@@ -150,6 +151,8 @@ type application struct {
 	participants, created []*component
 	peers                 map[*component]backend.Peer
 	components            map[backend.Peer]*component
+	bindingGenerations    map[backend.Peer]uint64
+	treeChanging          bool
 	running, failed       bool
 	primary               *backend.Panic
 	failures              []error
@@ -199,6 +202,7 @@ func (r *application) destroyPeer(c *component) {
 	}
 	delete(r.peers, c)
 	delete(r.components, p)
+	delete(r.bindingGenerations, p)
 	r.cleanupOp("destroy", func() error { return r.driver.Destroy(p) })
 }
 func (r *application) componentDestroyed(c *component) {
@@ -209,7 +213,7 @@ func (r *application) componentDestroyed(c *component) {
 	// Resource release happens in outer dispatch or after native Run returns.
 }
 func (r *application) event(e backend.Event) {
-	if !r.running {
+	if !r.running || r.treeChanging {
 		return
 	}
 	if e.Kind == backend.CloseRequest {
@@ -218,7 +222,7 @@ func (r *application) event(e backend.Event) {
 		return
 	}
 	c := r.components[e.Peer]
-	if c == nil || c.destroyed {
+	if c == nil || c.destroyed || r.bindingGenerations[e.Peer] != e.Generation {
 		return
 	}
 	if p := backend.Capture(func() {
@@ -234,7 +238,7 @@ func (r *application) event(e backend.Event) {
 	}
 }
 func (r *application) dispatch() *backend.Panic {
-	if !r.running {
+	if !r.running || r.treeChanging {
 		return r.primary
 	}
 	if p := r.queue.Dispatch(); p != nil {
@@ -254,7 +258,7 @@ func (r *application) dispatch() *backend.Panic {
 	}
 	return r.primary
 }
-func (r *application) eventsRunning() bool { return r.running }
+func (r *application) eventsRunning() bool { return r.running && !r.treeChanging }
 func (r *application) enqueueEvent(fn func()) {
 	if err := r.queue.Post(fn); err != nil && r.running {
 		panic(err)

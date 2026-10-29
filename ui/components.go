@@ -53,6 +53,8 @@ type component struct {
 	owned    map[*component]struct{}
 	children map[*component]struct{}
 	text     string
+	// savedInput belongs to logical preparation/detachment, never live peers.
+	savedInput *backend.InputState
 	eventState
 	bounds backend.Bounds
 	// started is latched by Run before native initialization for every participant.
@@ -124,6 +126,12 @@ func (c *component) init(owner Component, kind backend.Kind) {
 		o.owned = make(map[*component]struct{})
 	}
 	o.owned[c] = struct{}{}
+	if root := c.ownerRoot(); root != nil {
+		if r, ok := root.runtime.(*application); ok {
+			r.participants = append(r.participants, c)
+			c.runtime = r
+		}
+	}
 }
 
 // ownerRoot follows immutable ownership, independently of visual attachment.
@@ -158,11 +166,11 @@ func (c *control) Text() string { c.guardAlive(); return c.text }
 // SetText задаёт текст контрола.
 func (c *control) SetText(text string) { c.guardAlive(); c.setText(text) }
 
-// SetParent меняет только визуального родителя. MVP поддерживает настройку
-// дерева до Run и отсоединённых поддеревьев во время Run (на UI-потоке).
-// Переходы к/от работающей формы пока возвращают error; прежний Parent — no-op.
+// SetParent changes the visual parent synchronously. During Run it requires
+// the UI thread and backend transaction support; the same Parent is a no-op.
 // nil отсоединяет контрол, сохраняя его состояние.
-// Отказ не меняет ни одной связи или свойства.
+// An ordinary failure preserves links and properties. Failed native restoration
+// stops the runtime and is also reported by Run.
 func (c *visual) SetParent(parent Container) error {
 	c.guardAlive()
 	guardPreparationThread()
@@ -194,7 +202,10 @@ func (c *visual) SetParent(parent Container) error {
 		return nil
 	}
 	if runActive.Load() && (c.attached() || (parent != nil && parent.componentIdentity().attached())) {
-		return errors.New("ui: parent changes during Run are unsupported")
+		if r, ok := c.ownerRoot().runtime.(*application); ok {
+			return r.setParent(&c.component, parent)
+		}
+		return errors.New("ui: form runtime is unavailable")
 	}
 	if c.parent != nil {
 		delete(c.parent.componentIdentity().children, &c.component)

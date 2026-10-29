@@ -20,6 +20,9 @@ const (
 type Bounds struct{ X, Y, Width, Height int }
 
 type Config struct {
+	// Input optionally supplies prepared Edit positions for Text. It does not
+	// request focus. Static adapters defer consuming it until tree support.
+	Input  *InputState
 	Kind   Kind
 	Parent Peer
 	Text   string

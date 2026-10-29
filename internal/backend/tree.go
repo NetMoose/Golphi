@@ -86,7 +86,7 @@ type CleanupFailure struct {
 
 func (e CleanupFailure) Error() string {
 	if e.Panic != nil {
-		return fmt.Sprintf("%s: cleanup panic: %v", e.Operation, e.Panic.Value)
+		return fmt.Sprintf("%s: cleanup panic: %v\n%s", e.Operation, e.Panic.Value, e.Panic.Stack)
 	}
 	return fmt.Sprintf("%s: %v", e.Operation, e.Err)
 }
