@@ -20,6 +20,8 @@ func TestNativeEditKeyboardSelectionProbe(t *testing.T) {
 	if os.Getenv("GOLPHI_EDIT_KEYBOARD_PROBE") != "1" {
 		t.Skip("set GOLPHI_EDIT_KEYBOARD_PROBE=1 on interactive Windows amd64")
 	}
+	restoreFocus := os.Getenv("GOLPHI_EDIT_KEYBOARD_RESTORE_FOCUS") == "1"
+	fmt.Printf("EDIT_KEYBOARD_PROBE mode restore_focus=%t\n", restoreFocus)
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	d := New().(*driver)
@@ -199,6 +201,23 @@ func TestNativeEditKeyboardSelectionProbe(t *testing.T) {
 				}
 				moved = true
 				observe("immediate")
+				if restoreFocus {
+					// SetFocus returns the previous focus, so verify the new focus
+					// directly. This mode never repairs selection or text.
+					d.api["SetFocus"].Call(hwnd)
+					focus, _, _ := d.api["GetFocus"].Call()
+					observe("after-SetFocus-before-fence")
+					if observationErr != nil {
+						fail(observationErr)
+						return nil
+					}
+					if focus != hwnd {
+						completed = true
+						fmt.Printf("EDIT_KEYBOARD_SELECTION_PROBE_COMPLETE diagnostic_only=true production_acceptance=false restore_focus=%t continuation_performed=false reason=focus-restore-failed\n", restoreFocus)
+						d.Quit()
+						return nil
+					}
+				}
 				// A posted message dispatched by the real pump, not a sleep/timer, fences
 				// the later observation. Timer wakes only enforce the bounded deadline.
 				if _, err := d.call("PostMessageW", hwnd, fence, 0, 0); err != nil {
@@ -215,7 +234,7 @@ func TestNativeEditKeyboardSelectionProbe(t *testing.T) {
 					}
 					if !after.focused {
 						completed = true
-						fmt.Println("EDIT_KEYBOARD_SELECTION_PROBE_COMPLETE diagnostic_only=true production_acceptance=false continuation_performed=false reason=focus-lost-after-move")
+						fmt.Printf("EDIT_KEYBOARD_SELECTION_PROBE_COMPLETE diagnostic_only=true production_acceptance=false restore_focus=%t continuation_performed=false reason=focus-lost-after-move\n", restoreFocus)
 						d.Quit()
 						return nil
 					}
@@ -246,7 +265,7 @@ func TestNativeEditKeyboardSelectionProbe(t *testing.T) {
 						return nil
 					}
 					completed = true
-					fmt.Printf("EDIT_KEYBOARD_SELECTION_PROBE_COMPLETE diagnostic_only=true production_acceptance=false before_anchor=5 before_caret=2 continuation_performed=true expected_continuation_range=[3,5] expected_continuation_caret=3 focus_events_after_move=%d continuation_matches=%t\n", focusEventsAfterMove, continuation.lo == 3 && continuation.hi == 5 && continuation.lower && continuation.focused && continuation.text == "ABCDEF")
+					fmt.Printf("EDIT_KEYBOARD_SELECTION_PROBE_COMPLETE diagnostic_only=true production_acceptance=false restore_focus=%t before_anchor=5 before_caret=2 continuation_performed=true expected_continuation_range=[3,5] expected_continuation_caret=3 focus_events_after_move=%d continuation_matches=%t\n", restoreFocus, focusEventsAfterMove, continuation.lo == 3 && continuation.hi == 5 && continuation.lower && continuation.focused && continuation.text == "ABCDEF")
 					d.Quit()
 				} else {
 					fmt.Println("EDIT_KEYBOARD_PROBE_REJECT F9: need valid F8, dispatched fence, one Shift+Right")

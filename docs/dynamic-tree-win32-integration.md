@@ -246,3 +246,38 @@ cross-build и vet подтверждают только подготовку и
 русскую инструкцию и `scripts/probe-edit-keyboard-selection-windows.ps1` в
 UTF-8 с BOM. После запуска передать оба файла из
 `artifacts/edit-keyboard-selection-probe`, в том числе при неуспешном завершении.
+
+
+## Проба восстановления фокуса после переноса — 2026-10-29
+
+[Клавиатурная проба](../artifacts/edit-keyboard-selection-windows-20261029/keyboard-selection-probe.log.txt)
+и [окружение](../artifacts/edit-keyboard-selection-windows-20261029/environment.txt)
+соответствуют manifest диагностического пакета коммита `0ffc831`
+(SHA256 EXE `592701b7b6f94fbdc67ca0eac2822125cea8526a068c6a44c2512fb40115bcf9`). Начальное обратное выделение `[2,5]`
+в `ABCDEF` подтверждено с фокусом Edit и кареткой у нижней границы. После
+`place` HWND и диапазон сохраняются, но фокус уходит в старую Panel и остаётся
+там после доставки контрольного сообщения. Сбор завершился exit code 0 с
+`continuation_performed=false reason=focus-lost-after-move`. Координаты каретки
+без фокуса Edit не доказывают сохранение активного конца; продолжение ввода
+не было проверено.
+
+По согласованию добавлен режим `-RestoreFocus` к диагностическому runner.
+После переноса и чтения immediate ровно один SetFocus возвращает фокус прежнему
+HWND Edit. Сразу читаются GetFocus и native-состояние, затем доставляется
+контрольное сообщение и проверяется настоящий Shift+Right/F9. EM_SETSEL и
+restoreInput не вызываются. Возврат фокуса неудачен — фиксируется отрицательное
+наблюдение, без повторного нажатия мышью и восстановления выделения.
+
+Распаковать `artifacts/golphi-edit-focus-restore-probe-windows.zip` в новую папку
+и выполнить:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\probe-edit-keyboard-selection-windows.ps1 -RestoreFocus
+```
+
+Последовательность: щёлкнуть ABCDEF; End; Left один раз; Shift+Left три раза;
+отпустить Shift; F8; после подсказки формы Shift+Right один раз, отпустить
+Shift и F9. Не переключать фокус. Передать `keyboard-selection-probe.log` и
+`environment.txt` из `artifacts/edit-keyboard-selection-probe`. Русский .ps1
+сохранён с UTF-8 BOM. Сборка и статическая проверка не заменяют запуск на Windows;
+PASS пробы означает сбор данных. Production-код и задачи приёмки не меняются.
