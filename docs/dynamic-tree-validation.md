@@ -90,3 +90,25 @@ Startup обходит общие Owner/Parent связи, создаёт виз
 Сохранены открытыми публичные диагностические типы/формат, сочетания fatal SetParent с последующими вызовами/паникой обработчика, retry и судьба неосвобождённых ресурсов, порядок зависимой очистки и остальные исключённые вопросы. Реальный синхронный GTK focus protocol, clipping, преобразование native-позиций, late callbacks и callback roots должны быть подтверждены адаптерами отдельно.
 
 Итоговое review этапа 3: соответствие спецификации и качество — PASS, блокирующих замечаний нет. Дополнительная проверка `CGO_ENABLED=1 go test -race ./ui ./internal/backend` — PASS. Все перечисленные проверки выполнены координатором после объединения задач этапа; нативная интеграция 4.x остаётся незавершённой.
+
+## Нативная интеграция — 2026-10-29
+
+GTK4 и Win32 реализуют Panel, Config.Input, SnapshotInput и транзакции дерева. GTK переносит поддеревья с Edit через пересоздание с сохранением старых реализованных объектов до передачи ввода новым; это предотвращает позднюю потерю PRIMARY-выделения X11. Поддеревья без Edit используют переподчинение. Win32 сохраняет HWND при прямом переносе. Логические уведомления и атомарность одинаковы; подробности в [GTK](dynamic-tree-gtk4-integration.md), [Win32](dynamic-tree-win32-integration.md) и [общей интеграции](dynamic-tree-core-native.md).
+
+| Проверка координатора | Результат |
+|---|---|
+| Полный `CGO_ENABLED=0 go test -count=1 ./...`, Linux build/vet | PASS |
+| Windows amd64 CGO_ENABLED=0 build/vet, компиляция двух test EXE | PASS сборки; не native acceptance |
+| Все 8 GTK-тестов с `GOLPHI_GTK_NATIVE=1` | PASS, включая физическую финализацию и clipping 1200/0 |
+| Активное GTK-окно с `GTK_CSD=1`, Tree/ReplacementSelection | PASS, смещение root `[0 46 640 434]` сохранено до и после frame |
+| Старые native-core/native-close и новый dynamic core→native→core | PASS |
+| `CGO_ENABLED=1 go test -race ./ui ./internal/backend` | PASS |
+| Реальный Win32, clipping и foreground другого приложения | Ожидаются Windows-логи и ручные наблюдения |
+
+Команды выполнялись с `GOCACHE=/tmp/golphi-gocache GOMODCACHE=/tmp/golphi-gomodcache GOPROXY=off`. Нативные Linux-команды: `DISPLAY=:0 GDK_BACKEND=x11 GOLPHI_GTK_NATIVE=1 CGO_ENABLED=0 go test ./internal/backend/gtk4 -count=1 -v -timeout 30s`; затем `DISPLAY=:0 GDK_BACKEND=x11 GOLPHI_NATIVE_TREE=1 GOLPHI_NATIVE_CORE=1 GOLPHI_NATIVE_WM_CLOSE=1 CGO_ENABLED=0 go test ./ui -run '^TestNative(CoreIntegration|DynamicTreeIntegration)$' -count=1 -v -timeout 45s`. CSD-регрессия: первая команда с `GTK_CSD=1 -run '^TestNative(Tree|ReplacementSelection)$'`. Окружение прежнее: Linux Mint 22.3 amd64, Go 1.26.5, GTK 4.14.5, X11; переменные GDK_SCALE/GDK_DPI_SCALE не заданы.
+
+Для Windows подготовлен `artifacts/golphi-dynamic-native-windows.zip`: два консольных EXE, русская инструкция, runner и SHA256. Команды сборки и хеши — [manifest](../artifacts/dynamic-tree-native-build.txt). PowerShell-скрипт запускает автоматические тесты, а `-Manual` добавляет ограниченный по времени интерактивный сценарий. Подтверждения оператора и машинные наблюдения сохраняются раздельно; manual PASS не выдаётся за автоматическое сравнение пикселей. PowerShell и Windows EXE здесь не выполнялись.
+
+Fake fault injection, API-boundary fault injection, старые токены и реальные native-сигналы различены в отчётах. Не добавлены обещания для IME, Wayland, DPI switching, нескольких форм, cleanup retry и остальных открытых вопросов. До фактической Windows-проверки задачи 4.2–4.4 и общий этап приёмки остаются открытыми.
+
+Независимое review GTK после исправлений — PASS; review Win32 одобряет готовность к нативному запуску. Общий integration checkpoint — PASS. Подсказка runner дополнена путём инструкции внутри архива. Strict validation изменения и пяти основных specs, `git diff --check` — PASS. Завершена задача 4.1; Windows-зависимые пункты не отмечены выполненными.

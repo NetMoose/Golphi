@@ -1,0 +1,6 @@
+Windows native handoff, 2026-10-29
+Go1.26.5 linux/amd64; target windows/amd64; CGO_ENABLED=0; GOPROXY=off
+Commands: go test -c -buildvcs=false -o <exe> ./internal/backend/win32 ; same ./ui
+Cross-build only; no native Windows execution claimed.
+78e7e2ec41c145956d35b429acb82f91691ba53c02de5c70518dd3980f9b1509  golphi-win32.test.exe
+6109f07761ca11c8bfec6a7cb309cc87908a6fd881e57ef91c1346f55c921dd8  golphi-ui.test.exe

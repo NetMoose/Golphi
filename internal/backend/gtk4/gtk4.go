@@ -16,6 +16,21 @@ import (
 )
 
 type api struct {
+	allocate                                  func(uintptr, int32, int32, int32, uintptr)
+	computeBounds                             func(uintptr, uintptr, *[4]float32) int32
+	translate                                 func(uintptr, *[2]float32) uintptr
+	width, height                             func(uintptr) int32
+	editableDelegate                          func(uintptr) uintptr
+	scrollNew                                 func() uintptr
+	scrollChild                               func(uintptr, uintptr)
+	scrollPolicy                              func(uintptr, int32, int32)
+	scrollGetChild, widgetParent, windowFocus func(uintptr) uintptr
+	scrollFocus                               func(uintptr, int32)
+	setFocus                                  func(uintptr, uintptr)
+	selectRegion                              func(uintptr, int32, int32)
+	position                                  func(uintptr) int32
+	selection                                 func(uintptr, *int32, *int32) int32
+
 	initCheck                              func() int32
 	windowNew, fixedNew, entryNew          func() uintptr
 	buttonNew, labelNew                    func(string) uintptr
@@ -42,11 +57,16 @@ type peer struct {
 	handle, fixed uintptr
 	kind          backend.Kind
 	parent        backend.Peer
+	bounds        backend.Bounds
+	generation    uint64
 	signal        uint64
 	token         uintptr
 }
 type driver struct {
-	backend.UnsupportedTree // Dynamic implementation is a later adapter task.
+	fenced        bool
+	generation    uint64
+	retired       []backend.Peer
+	callbackDepth int
 
 	api           api
 	peers         map[backend.Peer]*peer
@@ -93,10 +113,16 @@ func callback(token uintptr, kind backend.EventKind) {
 			return
 		}
 		d = e.d
-		if d.failure != nil || d.quit {
+		if d.failure != nil || d.quit || d.fenced {
 			return
 		}
-		event := backend.Event{Kind: kind, Peer: e.id}
+		p := d.peers[e.id]
+		if p == nil || p.token != token {
+			return
+		}
+		d.callbackDepth++
+		defer func() { d.callbackDepth-- }()
+		event := backend.Event{Kind: kind, Peer: e.id, Generation: p.generation}
 		if kind == backend.Change {
 			p, ok := d.peers[e.id]
 			if !ok {
@@ -147,7 +173,7 @@ func (d *driver) Init(c backend.Callbacks) (err error) {
 		p any
 		n string
 	}{
-		{&a.initCheck, "gtk_init_check"}, {&a.windowNew, "gtk_window_new"}, {&a.fixedNew, "gtk_fixed_new"}, {&a.entryNew, "gtk_entry_new"}, {&a.buttonNew, "gtk_button_new_with_label"}, {&a.labelNew, "gtk_label_new"},
+		{&a.allocate, "gtk_widget_allocate"}, {&a.computeBounds, "gtk_widget_compute_bounds"}, {&a.translate, "gsk_transform_translate"}, {&a.width, "gtk_widget_get_width"}, {&a.height, "gtk_widget_get_height"}, {&a.editableDelegate, "gtk_editable_get_delegate"}, {&a.scrollNew, "gtk_scrolled_window_new"}, {&a.scrollChild, "gtk_scrolled_window_set_child"}, {&a.scrollPolicy, "gtk_scrolled_window_set_policy"}, {&a.scrollGetChild, "gtk_scrolled_window_get_child"}, {&a.scrollFocus, "gtk_viewport_set_scroll_to_focus"}, {&a.widgetParent, "gtk_widget_get_parent"}, {&a.windowFocus, "gtk_window_get_focus"}, {&a.setFocus, "gtk_window_set_focus"}, {&a.selectRegion, "gtk_editable_select_region"}, {&a.position, "gtk_editable_get_position"}, {&a.selection, "gtk_editable_get_selection_bounds"}, {&a.initCheck, "gtk_init_check"}, {&a.windowNew, "gtk_window_new"}, {&a.fixedNew, "gtk_fixed_new"}, {&a.entryNew, "gtk_entry_new"}, {&a.buttonNew, "gtk_button_new_with_label"}, {&a.labelNew, "gtk_label_new"},
 		{&a.refSink, "g_object_ref_sink"}, {&a.unref, "g_object_unref"}, {&a.windowDestroy, "gtk_window_destroy"}, {&a.windowChild, "gtk_window_set_child"}, {&a.windowSize, "gtk_window_set_default_size"}, {&a.resizable, "gtk_window_set_resizable"}, {&a.size, "gtk_widget_set_size_request"}, {&a.put, "gtk_fixed_put"}, {&a.remove, "gtk_fixed_remove"},
 		{&a.title, "gtk_window_set_title"}, {&a.editText, "gtk_editable_set_text"}, {&a.buttonText, "gtk_button_set_label"}, {&a.labelText, "gtk_label_set_text"}, {&a.getTitle, "gtk_window_get_title"}, {&a.getEdit, "gtk_editable_get_text"}, {&a.getButton, "gtk_button_get_label"}, {&a.getLabel, "gtk_label_get_text"},
 		{&a.present, "gtk_window_present"}, {&a.visible, "gtk_widget_set_visible"}, {&a.connect, "g_signal_connect_data"}, {&a.disconnect, "g_signal_handler_disconnect"}, {&a.contextDefault, "g_main_context_default"}, {&a.contextRef, "g_main_context_ref"}, {&a.contextUnref, "g_main_context_unref"}, {&a.wake, "g_main_context_wakeup"}, {&a.iteration, "g_main_context_iteration"},
@@ -198,17 +224,24 @@ func (d *driver) Create(c backend.Config) (backend.Peer, error) {
 	if c.Kind != backend.Form {
 		var err error
 		parent, err = d.lookup(c.Parent)
-		if err != nil || parent.kind != backend.Form {
-			return 0, errors.New("GTK control requires form parent")
+		if err != nil || (parent.kind != backend.Form && parent.kind != backend.Panel) {
+			return 0, errors.New("GTK control requires container parent")
 		}
 	} else if c.Parent != 0 {
 		return 0, errors.New("GTK form cannot have parent")
 	}
-	p := &peer{kind: c.Kind, parent: c.Parent}
+	if c.Input != nil {
+		if err := validInput(c.Text, c.Input); err != nil {
+			return 0, err
+		}
+	}
+	p := &peer{kind: c.Kind, parent: c.Parent, bounds: c.Bounds}
 	a := &d.api
 	switch c.Kind {
 	case backend.Form:
 		p.handle = a.windowNew()
+	case backend.Panel:
+		p.handle = a.scrollNew()
 	case backend.Edit:
 		p.handle = a.entryNew()
 	case backend.Button:
@@ -222,6 +255,9 @@ func (d *driver) Create(c backend.Config) (backend.Peer, error) {
 		return 0, errors.New("GTK widget creation failed")
 	}
 	a.refSink(p.handle)
+	if d.fenced {
+		a.visible(p.handle, 0)
+	}
 	d.next++
 	id := d.next
 	d.peers[id] = p
@@ -235,6 +271,16 @@ func (d *driver) Create(c backend.Config) (backend.Peer, error) {
 		a.windowSize(p.handle, int32(c.Bounds.Width), int32(c.Bounds.Height))
 		a.resizable(p.handle, 0)
 	} else {
+		if c.Kind == backend.Panel {
+			p.fixed = a.fixedNew()
+			if p.fixed == 0 {
+				_ = d.Destroy(id)
+				return 0, errors.New("GTK panel content creation failed")
+			}
+			a.scrollPolicy(p.handle, 3, 3)
+			a.scrollChild(p.handle, p.fixed)
+			a.scrollFocus(a.scrollGetChild(p.handle), 0)
+		}
 		a.size(p.handle, int32(c.Bounds.Width), int32(c.Bounds.Height))
 		a.put(parent.fixed, p.handle, float64(c.Bounds.X), float64(c.Bounds.Y))
 	}
@@ -242,9 +288,17 @@ func (d *driver) Create(c backend.Config) (backend.Peer, error) {
 		_ = d.Destroy(id)
 		return 0, err
 	}
+	if c.Kind == backend.Edit && c.Input != nil {
+		a.selectRegion(p.handle, int32(c.Input.Anchor), int32(c.Input.Caret))
+	}
+	d.connect(id, p)
+	return id, nil
+}
+func (d *driver) connect(id backend.Peer, p *peer) {
+	a := &d.api
 	var signal string
 	var cb uintptr
-	switch c.Kind {
+	switch p.kind {
 	case backend.Form:
 		signal = "close-request"
 		cb = closeTrampoline
@@ -265,12 +319,16 @@ func (d *driver) Create(c backend.Config) (backend.Peer, error) {
 		registry.Unlock()
 		p.signal = a.connect(p.handle, signal, cb, p.token, 0, 0)
 	}
-	return id, nil
 }
 func (d *driver) Destroy(id backend.Peer) error {
 	p, err := d.lookup(id)
 	if err != nil {
 		return err
+	}
+	if d.callbackDepth > 0 {
+		d.invalidate(p)
+		d.retired = append(d.retired, id)
+		return nil
 	}
 	delete(d.peers, id)
 	registry.Lock()
@@ -279,13 +337,15 @@ func (d *driver) Destroy(id backend.Peer) error {
 	if p.signal != 0 {
 		d.api.disconnect(p.handle, p.signal)
 	}
-	if p.kind == backend.Form {
+	if p.kind == backend.Form || p.kind == backend.Panel {
 		// Fence all child callback roots before destroying their native parent.
 		for child, q := range d.peers {
 			if q.parent == id {
 				_ = d.Destroy(child)
 			}
 		}
+	}
+	if p.kind == backend.Form {
 		d.api.windowDestroy(p.handle)
 	} else if parent := d.peers[p.parent]; parent != nil {
 		d.api.remove(parent.fixed, p.handle)
@@ -325,8 +385,10 @@ func (d *driver) Text(id backend.Peer) (string, error) {
 		return d.api.getEdit(p.handle), nil
 	case backend.Button:
 		return d.api.getButton(p.handle), nil
-	default:
+	case backend.Label:
 		return d.api.getLabel(p.handle), nil
+	default:
+		return "", nil
 	}
 }
 func (d *driver) Show(id backend.Peer) error {
@@ -357,6 +419,7 @@ func (d *driver) Run(dispatch func() *backend.Panic) (*backend.Panic, error) {
 		return nil, errors.New("GTK driver not ready")
 	}
 	for !d.quit {
+		d.releaseRetired()
 		d.pending.Swap(false)
 		if dispatch != nil {
 			if p := dispatch(); p != nil {
@@ -372,6 +435,7 @@ func (d *driver) Run(dispatch func() *backend.Panic) (*backend.Panic, error) {
 		// wakeup is sticky through the next iteration, closing the check/sleep race.
 		d.api.iteration(d.context, 1)
 	}
+	d.releaseRetired()
 	return d.failure, nil
 }
 func (d *driver) Close() error {
@@ -382,6 +446,7 @@ func (d *driver) Close() error {
 	d.closed = true
 	d.ready = false
 	d.mu.Unlock()
+	d.releaseRetired()
 	for id := range d.peers {
 		_ = d.Destroy(id)
 	}

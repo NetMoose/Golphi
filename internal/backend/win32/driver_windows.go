@@ -17,7 +17,7 @@ import (
 const (
 	wmClose    = 0x10
 	wmCommand  = 0x111
-	formStyle  = 0x00c80000 | 0x00080000 | 0x00020000
+	formStyle  = 0x00c80000 | 0x00080000 | 0x00020000 | 0x02000000
 	childStyle = 0x40000000 | 0x10000000
 )
 
@@ -40,12 +40,22 @@ type windowClass struct {
 	smallIcon                          uintptr
 }
 type peer struct {
-	hwnd   uintptr
-	kind   backend.Kind
-	parent backend.Peer
+	hwnd                            uintptr
+	kind                            backend.Kind
+	parent                          backend.Peer
+	bounds                          backend.Bounds
+	generation                      uint64
+	oldProc                         uintptr
+	selectionAnchor, selectionCaret uint32
+	selectionKnown                  bool
+	selectionObservation            caretObservation
 }
 type driver struct {
-	backend.UnsupportedTree // Dynamic implementation is a later adapter task.
+	fenced          bool
+	deliveryStopped bool
+	callbackDepth   int
+	retired         []backend.Peer
+	generation      uint64
 
 	api         map[string]*syscall.Proc
 	dlls        []*syscall.DLL
@@ -96,7 +106,7 @@ func (d *driver) Init(cb backend.Callbacks) error {
 		name    string
 		symbols []string
 	}{
-		{"user32.dll", []string{"RegisterClassExW", "UnregisterClassW", "CreateWindowExW", "DestroyWindow", "DefWindowProcW", "PeekMessageW", "MsgWaitForMultipleObjectsEx", "TranslateMessage", "DispatchMessageW", "ShowWindow", "SetWindowTextW", "GetWindowTextLengthW", "GetWindowTextW", "AdjustWindowRectExForDpi", "GetDpiForSystem", "SetThreadDpiAwarenessContext", "LoadCursorW"}},
+		{"user32.dll", []string{"RegisterClassExW", "UnregisterClassW", "CreateWindowExW", "DestroyWindow", "DefWindowProcW", "PeekMessageW", "MsgWaitForMultipleObjectsEx", "TranslateMessage", "DispatchMessageW", "ShowWindow", "SetWindowTextW", "GetWindowTextLengthW", "GetWindowTextW", "AdjustWindowRectExForDpi", "GetDpiForSystem", "SetThreadDpiAwarenessContext", "LoadCursorW", "SetParent", "GetParent", "SetWindowPos", "GetFocus", "SetFocus", "SendMessageW", "GetCaretPos", "SetWindowLongPtrW", "CallWindowProcW", "IsWindow"}},
 		{"kernel32.dll", []string{"GetModuleHandleW", "SetLastError", "CreateEventW", "SetEvent", "ResetEvent", "CloseHandle", "WaitForSingleObject"}}} {
 		dll, err := syscall.LoadDLL(lib.name)
 		if err != nil {
@@ -159,6 +169,8 @@ func wndProc(hwnd uintptr, msg uint32, w, l uintptr) (result uintptr) {
 	if d == nil {
 		return 0
 	}
+	d.callbackDepth++
+	defer func() { d.callbackDepth-- }()
 	failure := backend.Capture(func() {
 		if msg == wmClose {
 			if id, ok := d.byHWND[hwnd]; ok {
@@ -171,14 +183,14 @@ func wndProc(hwnd uintptr, msg uint32, w, l uintptr) (result uintptr) {
 				p := d.peers[id]
 				code := uint16(w >> 16)
 				if p.kind == backend.Button && code == 0 {
-					d.emit(backend.Event{Kind: backend.Click, Peer: id})
+					d.emit(backend.Event{Kind: backend.Click, Peer: id, Generation: p.generation})
 				}
 				if p.kind == backend.Edit && code == 0x300 {
 					s, err := d.Text(id)
 					if err != nil {
 						panic(err)
 					}
-					d.emit(backend.Event{Kind: backend.Change, Peer: id, Text: s})
+					d.emit(backend.Event{Kind: backend.Change, Peer: id, Text: s, Generation: p.generation})
 				}
 			}
 		}
@@ -200,7 +212,10 @@ func (d *driver) captureFailure(p *backend.Panic) {
 	}
 }
 func (d *driver) emit(e backend.Event) {
-	if d.failure == nil && !d.quitting && d.cb.Event != nil {
+	if d.failure == nil && !d.quitting && !d.fenced && !d.deliveryStopped && d.cb.Event != nil {
+		if p, ok := d.peers[e.Peer]; !ok || p.generation != e.Generation {
+			return
+		}
 		d.cb.Event(e)
 	}
 }
@@ -237,12 +252,17 @@ func (d *driver) Create(c backend.Config) (backend.Peer, error) {
 	ex := uintptr(0)
 	if c.Kind != backend.Form {
 		p, ok := d.peers[c.Parent]
-		if !ok || p.kind != backend.Form {
+		if !ok || (p.kind != backend.Form && p.kind != backend.Panel) {
 			return 0, errors.New("win32: invalid parent")
 		}
 		parent = p.hwnd
 		style = childStyle
+		if d.fenced {
+			style &^= 0x10000000
+		}
 		switch c.Kind {
+		case backend.Panel:
+			style |= 0x02000000 | 0x04000000
 		case backend.Edit:
 			class, _ = encodeText("EDIT")
 			style |= 0x00800000 | 0x00010000 | 0x80
@@ -283,8 +303,24 @@ func (d *driver) Create(c backend.Config) (backend.Peer, error) {
 	if err != nil {
 		return 0, err
 	}
-	d.peers[id] = peer{handle, c.Kind, c.Parent}
+	d.peers[id] = peer{hwnd: handle, kind: c.Kind, parent: c.Parent, bounds: c.Bounds}
 	d.byHWND[handle] = id
+	if c.Kind == backend.Edit {
+		editTrampoline.Do(func() { editTrampoline.address = syscall.NewCallback(editProc) })
+		old, err := d.call("SetWindowLongPtrW", handle, ^uintptr(3), editTrampoline.address)
+		if err != nil {
+			return 0, errors.Join(err, d.Destroy(id))
+		}
+		p := d.peers[id]
+		p.oldProc = old
+		p.selectionKnown = true
+		d.peers[id] = p
+		if c.Input != nil {
+			if err := d.restoreInput(id, *c.Input); err != nil {
+				return 0, errors.Join(err, d.Destroy(id))
+			}
+		}
+	}
 	return id, nil
 }
 func (d *driver) get(id backend.Peer) (peer, error) {
@@ -301,12 +337,7 @@ func (d *driver) Destroy(id backend.Peer) error {
 	}
 	// DestroyWindow cascades to children. Disable the entire subtree first,
 	// and retire every associated identity only after native destruction succeeds.
-	ids := []backend.Peer{id}
-	for childID, child := range d.peers {
-		if child.parent == id {
-			ids = append(ids, childID)
-		}
-	}
+	ids := d.subtree(id)
 	for _, childID := range ids {
 		delete(d.byHWND, d.peers[childID].hwnd)
 	}
@@ -359,6 +390,9 @@ func (d *driver) Show(id backend.Peer) error {
 }
 func (d *driver) Run(dispatch func() *backend.Panic) (*backend.Panic, error) {
 	for !d.quitting {
+		if err := d.releaseRetired(); err != nil {
+			return d.failure, err
+		}
 		// Reset before dispatch: a concurrent successful Wake either supplies work
 		// to this dispatch (under Queue's lock) or leaves the event signaled.
 		if _, err := d.call("ResetEvent", d.wake); err != nil {
@@ -379,6 +413,11 @@ func (d *driver) Run(dispatch func() *backend.Panic) (*backend.Panic, error) {
 			break
 		}
 		if r != 0 {
+			// Supported child notifications are synchronous SendMessage calls.
+			// A posted WM_COMMAND has no trustworthy originating routing epoch.
+			if m.msg == wmCommand && m.l != 0 {
+				continue
+			}
 			if m.msg == 0x12 {
 				break
 			}
@@ -409,6 +448,7 @@ func (d *driver) Wake() error {
 	return err
 }
 func (d *driver) Close() error {
+	d.retired = nil
 	var errs []error
 	d.cb = backend.Callbacks{}
 	d.quitting = true
@@ -451,7 +491,7 @@ func (d *driver) Close() error {
 		}
 	}
 	registry.Lock()
-	if registry.owner == d && d.atom == 0 {
+	if registry.owner == d && d.atom == 0 && len(d.peers) == 0 {
 		registry.owner = nil
 	}
 	registry.Unlock()
@@ -464,7 +504,7 @@ func (d *driver) Close() error {
 	// If native teardown failed and the class is still registered, retain its
 	// default-procedure DLL and inert registry entry. No application sink is
 	// retained, and late messages remain ABI-safe rather than calling freed code.
-	if d.atom != 0 {
+	if d.atom != 0 || len(d.peers) != 0 {
 		return errors.Join(errs...)
 	}
 	for _, dll := range d.dlls {
