@@ -1,0 +1,74 @@
+ENV go=go1.26.5 os=windows arch=amd64 startup=8316 main=8316
+PASS: startup OS thread pinned
+PASS: RtlGetVersion
+ENV Windows=10.0 build=26100
+PASS: Windows 11 or newer native precondition
+PASS: system DPI awareness
+PASS: system DPI
+ENV DPI=96 scale=100.0% system-aware
+PASS: CreateWindowExW STATIC
+PASS: CreateWindowExW STATIC
+PASS: CreateWindowExW STATIC
+PASS: CreateWindowExW STATIC
+PASS: GetClientRect
+PASS: GetClientRect
+PASS: GetClientRect
+PASS: GetClientRect
+PASS: CreateWindowExW STATIC
+PASS: GetClientRect
+PASS: GetClientRect
+PASS: GetClientRect
+PASS: GetClientRect
+PASS: oversized nested child does not grow ancestors
+PASS: child DC
+PASS: ReleaseDC
+PASS: native DC clipping inside nested parent
+PASS: remove overflow child
+PASS: CreateWindowExW EDIT
+PASS: GetCaretPos
+PASS: initial exact Unicode text
+PASS: initial Unicode surrogate-pair selection and focus
+PASS: same-form native SetParent
+PASS: restore Unicode text
+PASS: GetCaretPos
+STATE reparent selection hwnd=0x50602 {Text:А😀Б é 日本語 Start:1 End:3 Focus:true CaretX:18 CaretY:2}
+PASS: reparent selection text/selection/focus/caret
+PASS: GetCaretPos
+PASS: initial collapsed caret exactly UTF-16 offset 4
+PASS: CreateWindowExW EDIT
+PASS: restore Unicode text
+PASS: GetCaretPos
+STATE recreate collapsed caret hwnd=0x405d0 {Text:А😀Б é 日本語 Start:4 End:4 Focus:true CaretX:28 CaretY:2}
+PASS: recreate collapsed caret text/selection/focus/caret
+PASS: destroy replaced native edit
+PASS: restore Unicode text
+PASS: GetCaretPos
+STATE recreate Unicode selection hwnd=0x405d0 {Text:А😀Б é 日本語 Start:1 End:3 Focus:true CaretX:18 CaretY:2}
+PASS: recreate Unicode selection text/selection/focus/caret
+PASS: CreateWindowExW STATIC
+PASS: prepare stale destination
+PASS: GetCaretPos
+FAILURE-INJECTION SetParent result=0x0 error=Invalid window handle.
+PASS: invalid destination returns native failure
+PASS: failed transfer retains source parent
+PASS: restore Unicode text
+PASS: GetCaretPos
+STATE failed transfer restoration hwnd=0x405d0 {Text:А😀Б é 日本語 Start:1 End:3 Focus:true CaretX:18 CaretY:2}
+PASS: failed transfer restoration text/selection/focus/caret
+PASS: EnumChildWindows native callback on startup thread
+CALLBACK hwnd=0x302f2 thread=8316 startup=8316
+PASS: EnumChildWindows native callback on startup thread
+CALLBACK hwnd=0x405cc thread=8316 startup=8316
+PASS: EnumChildWindows native callback on startup thread
+CALLBACK hwnd=0x405d0 thread=8316 startup=8316
+PASS: EnumChildWindows native callback on startup thread
+CALLBACK hwnd=0x3004fe thread=8316 startup=8316
+PASS: native descendant callbacks observed
+PASS: worker separated from UI thread
+PASS: GetClientRect
+PASS: GetClientRect
+PASS: GetClientRect
+PASS: GetClientRect
+PASS: all mutations preserve ancestor bounds
+PASS: destroy form and remaining descendants
+PASS: ALL native dynamic-tree Windows assertions

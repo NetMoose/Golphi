@@ -1,0 +1,6 @@
+﻿Date=2026-10-29T02:47:43.3633952+05:00
+Executable=C:\Users\lynxh\Downloads\golphi\probe-tree-windows.exe
+SHA256=8117275B59BECFF7BB47BABEBA433206D2543C3EFC072EB31B6E1564BFF11880
+OS=Microsoft Windows NT 10.0.26100.0
+PowerShell=5.1.26100.7462
+ExitCode=

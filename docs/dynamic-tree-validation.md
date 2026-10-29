@@ -15,8 +15,8 @@
 | Подготовка feature-ветки и базовая регрессия | PASS |
 | Linux: вложенность/clipping, перенос и состояние ввода | PASS в ограниченном техническом эксперименте; [журнал](../artifacts/dynamic-tree-linux-probe.txt), [условия и ограничения](dynamic-tree-linux-probe.md) |
 | Windows: подготовка executable и инструкции | Cross-build и review PASS; [русская инструкция](dynamic-tree-windows-probe.md) |
-| Windows: фактический запуск нового native-примера | Ожидается пользовательский журнал |
-| Общий Driver для динамического дерева | Ожидает результатов двух нативных экспериментов |
+| Windows: фактический запуск нового native-примера | PASS, 2026-10-29, build 26100, 96 DPI / 100% |
+| Общий Driver для динамического дерева | Следующая задача 1.4; результаты двух экспериментов получены |
 
 Технические пробы не являются реализацией публичного динамического API. Ранее принятые MVP-журналы не доказывают новых свойств дерева. Cross-build отдельно от Windows native-прогона. Остальные открытые вопросы сохранены; основные specs не синхронизируются до отдельного запроса.
 
@@ -30,6 +30,16 @@ GOLPHI_TREE_PROBE=1 CGO_ENABLED=0 GDK_BACKEND=x11 DISPLAY=:0 GOCACHE=/tmp/golphi
 
 Нативный эксперимент подтверждает вложенность без роста от ребёнка 1200×600, clipping через hit-test и отрисовку GTK (1200 изменённых пикселей внутри, 0 снаружи), перенос и пересоздание Edit с сохранением фокуса/Unicode-позиций, отсутствие auto-scroll при фокусе, disconnect и финализацию двух Edit. Это не полная интеграция динамического API. Экспериментальная пауза для смены фокуса не принимается как production-протокол: следующий этап должен найти событийное решение с сохранением синхронного контракта SetParent либо сообщить blocker.
 
-Windows-проба проверена ревью, собрана с `GOOS=windows GOARCH=amd64 CGO_ENABLED=0`; её native-проверки, DPI и PowerShell runner ещё требуют запуска на Windows. До фактического журнала задача 1.3 и зависимая задача 1.4 остаются открытыми. Полный технический этап 1.5 пока не завершён; текущий commit/push сохраняет подготовленный checkpoint.
+Windows-проба проверена ревью и собрана с `GOOS=windows GOARCH=amd64 CGO_ENABLED=0`. На момент первого checkpoint фактический Windows-прогон ещё ожидался; его результат приведён ниже. Полный технический этап 1.5 пока не завершён.
 
 Финальные проверки checkpoint: `CGO_ENABLED=0 go test -count=1 ./...`, `go vet ./...` с теми же offline caches; Windows cross-build и target vet для `cmd/probe-tree-windows`; strict validation изменения и всех пяти основных specs. Общий go test без opt-in не запускает native-тесты.
+
+## Windows native-прогон 2026-10-29
+
+Пользователь выполнил запуск на Windows 11 amd64 build 26100, Go 1.26.5, 96 DPI / 100%, PowerShell 5.1.26100.7462. Сохранены исходные [stdout](../artifacts/dynamic-tree-windows-evidence/20261029-024743.stdout.log), [stderr](../artifacts/dynamic-tree-windows-evidence/20261029-024743.stderr.log) и [result](../artifacts/dynamic-tree-windows-evidence/20261029-024743.result.txt) без изменений.
+
+SHA256 executable `8117275b59becff7bb47babeba433206d2543c3efc072eb31b6e1564bff11880` совпадает с переданным архивом, построенным из `fe006c4`. Финальная строка stdout — `PASS: ALL native dynamic-tree Windows assertions`, stderr пуст. Пользователь сообщил `$LASTEXITCODE = 0`. Поле `ExitCode` в result пустое: журнал runner не доказывает числовой код самого дочернего процесса; это ограничение диагностики сохраняется явно, исходный журнал не исправлялся.
+
+PASS: вложенные панели без роста предков, DC clipping, прямой перенос Edit, пересоздание с сохранением текста/фокуса/UTF-16 selection и caret, реальная ошибка SetParent на недействительный HWND с сохранением источника и восстановлением состояния, native callback на startup thread, отдельный worker thread и уничтожение формы. Сообщение `FAILURE-INJECTION ... Invalid window handle` — ожидаемый проверяемый отказ, после которого assertions проходят.
+
+Задача 1.3 завершена. Доступен следующий шаг 1.4 — внутренний Driver на основании обоих экспериментов. Это ещё не проверка production-транзакций или всего динамического API; ограничения технических проб и остальные открытые вопросы сохраняются.
