@@ -46,6 +46,8 @@ type peer struct {
 	token         uintptr
 }
 type driver struct {
+	backend.UnsupportedTree // Dynamic implementation is a later adapter task.
+
 	api           api
 	peers         map[backend.Peer]*peer
 	next          backend.Peer

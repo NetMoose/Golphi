@@ -12,6 +12,7 @@ import (
 )
 
 type runFake struct {
+	backend.UnsupportedTree
 	cb      backend.Callbacks
 	configs []backend.Config
 	calls   int

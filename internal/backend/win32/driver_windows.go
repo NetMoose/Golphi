@@ -45,6 +45,8 @@ type peer struct {
 	parent backend.Peer
 }
 type driver struct {
+	backend.UnsupportedTree // Dynamic implementation is a later adapter task.
+
 	api         map[string]*syscall.Proc
 	dlls        []*syscall.DLL
 	cb          backend.Callbacks
