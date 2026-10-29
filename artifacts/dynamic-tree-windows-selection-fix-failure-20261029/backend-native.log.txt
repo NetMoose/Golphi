@@ -1,0 +1,7 @@
+=== RUN   TestNativeDynamicTreeWin32
+    tree_native_windows_test.go:117: NATIVE_INPUT phase=before-SetFocus peer=6 hwnd=0x2068e focus=0x20690 dpi=96 utf16=[1,6] caretOK=1 caretErr=The operation completed successfully. caret=(0,0) lowRaw=0xa low=(10,0) highRaw=0x23 high=(35,0) cached=[6,1] known=true cache={X:0 Y:0 Valid:false}
+    tree_native_windows_test.go:119: NATIVE_INPUT phase=after-SetFocus-before-EM_SETSEL peer=6 hwnd=0x2068e focus=0x2068e dpi=96 utf16=[1,6] caretOK=1 caretErr=The operation completed successfully. caret=(35,2) lowRaw=0xa low=(10,0) highRaw=0x23 high=(35,0) cached=[6,1] known=true cache={X:0 Y:0 Valid:false}
+    tree_native_windows_test.go:121: selection restore direction mismatch: requested scalar=[4,1] observed=[1,4]
+--- FAIL: TestNativeDynamicTreeWin32 (0.04s)
+FAIL
+EXIT_CODE=1

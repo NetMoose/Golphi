@@ -187,3 +187,35 @@ Windows ещё требует нового нативного запуска. Ф
 и строками `same-ordered-range-after-verified-restore`; проверяются также концы
 текста. Успешный cross-build и переносимые regression-тесты не заменяют этот
 Windows-запуск. Старые журналы и открытые вопросы сохраняются.
+
+
+## Изолированная диагностика выделения — 2026-10-29
+
+Кандидат `ef89b06` проверен пользователем на Windows build 26100:
+[журнал](../artifacts/dynamic-tree-windows-selection-fix-failure-20261029/backend-native.log.txt),
+[окружение и SHA256](../artifacts/dynamic-tree-windows-selection-fix-failure-20261029/environment.txt).
+Хеши совпали с переданной сборкой. `restoreInput` до переноса возвращает
+`selection restore direction mismatch: requested scalar=[4,1] observed=[1,4]`.
+Переход через свёрнутый диапазон не подтвердился как способ восстановления
+обратного выделения; UI-тест ещё не запускался. Windows-приёмка остаётся открытой.
+
+Следующий шаг — отдельный `TestNativeEditSelectionProbe`, запускаемый через
+`scripts/probe-edit-selection-windows.ps1`. Он сравнивает обычный EDIT и EDIT
+с оконной процедурой Golphi, прямое/обратное выделение и отдельные эксперименты
+с индексом каретки. Это сбор наблюдений, а не исправление production-кода.
+PASS диагностического теста означает только завершение сбора данных;
+он не закрывает задачи 4.2–4.4 и не заменяет нативные интеграционные тесты.
+Русский PowerShell-скрипт и инструкция в архиве сохраняются с UTF-8 BOM.
+
+Пакет: `artifacts/golphi-edit-selection-probe-windows.zip`;
+[manifest](../artifacts/edit-selection-probe-build.txt). Распаковать в новую папку
+и выполнить из неё:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\probe-edit-selection-windows.ps1
+```
+
+Передать `selection-probe.log` и `environment.txt` из
+`artifacts/edit-selection-probe`, включая неуспешный запуск. Во время короткого
+теста не переключать фокус. Тайм-аут — 60 секунд. Нужен результат на Windows;
+cross-build и vet подтверждают только подготовку исполняемого файла.

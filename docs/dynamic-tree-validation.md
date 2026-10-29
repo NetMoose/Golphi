@@ -128,3 +128,22 @@ Fake fault injection, API-boundary fault injection, старые токены и
 Нативная приёмка по-прежнему не выполнена. Исправление должно проверять реальную каретку, а не выдавать запрошенное направление из кеша за наблюдаемое.
 
 Подготовлен кандидат исправления: однострочное сравнение по однозначному X, обновление кеша по фактической каретке и переход через свёрнутый диапазон перед восстановлением направления с последующим readback. Регрессия на координатах из журнала прошла RED/GREEN; добавлены нативные проверки смены направления одного диапазона. Полный CGO_ENABLED=0 набор, Linux/Windows vet, Windows test cross-build, strict validation и review — PASS. Нативный результат кандидата ещё ожидается. Пакет `artifacts/golphi-dynamic-native-windows-selection-fix.zip`, [manifest](../artifacts/dynamic-tree-native-selection-fix-build.txt); русский runner сохраняет UTF-8+BOM. Следующий прогон — только автоматические тесты.
+
+
+## Изолированная диагностика выделения — 2026-10-29
+
+Кандидат `ef89b06` проверен пользователем на Windows build 26100:
+[журнал](../artifacts/dynamic-tree-windows-selection-fix-failure-20261029/backend-native.log.txt),
+[окружение и SHA256](../artifacts/dynamic-tree-windows-selection-fix-failure-20261029/environment.txt).
+Хеши совпали с переданной сборкой. `restoreInput` до переноса возвращает
+`selection restore direction mismatch: requested scalar=[4,1] observed=[1,4]`.
+Переход через свёрнутый диапазон не подтвердился как способ восстановления
+обратного выделения; UI-тест ещё не запускался. Windows-приёмка остаётся открытой.
+
+Следующий шаг — отдельный `TestNativeEditSelectionProbe`, запускаемый через
+`scripts/probe-edit-selection-windows.ps1`. Он сравнивает обычный EDIT и EDIT
+с оконной процедурой Golphi, прямое/обратное выделение и отдельные эксперименты
+с индексом каретки. Это сбор наблюдений, а не исправление production-кода.
+PASS диагностического теста означает только завершение сбора данных;
+он не закрывает задачи 4.2–4.4 и не заменяет нативные интеграционные тесты.
+Русский PowerShell-скрипт и инструкция в архиве сохраняются с UTF-8 BOM.
