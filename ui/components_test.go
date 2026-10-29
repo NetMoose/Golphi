@@ -3,13 +3,14 @@ package ui
 import "testing"
 
 func TestPrepareAndReparent(t *testing.T) {
-	owner, first, second := NewForm(), NewForm(), NewForm()
+	owner := NewForm()
+	first, second := NewPanel(owner), NewPanel(owner)
 	edit := NewEdit(owner)
 	edit.SetText("Привет")
 	if edit.Owner() != owner || edit.Parent() != nil {
 		t.Fatal("constructor attached control")
 	}
-	for _, parent := range []*Form{first, second, nil, first} {
+	for _, parent := range []Container{first, second, nil, first} {
 		if err := edit.SetParent(parent); err != nil {
 			t.Fatal(err)
 		}
@@ -28,7 +29,8 @@ func TestPrepareAndReparent(t *testing.T) {
 }
 
 func TestFirstAttachmentFailurePreservesSettings(t *testing.T) {
-	owner, parent := NewForm(), NewForm()
+	owner := NewForm()
+	parent := NewPanel(owner)
 	parent.Destroy()
 	button := NewButton(owner)
 	button.SetText("Кнопка")
@@ -41,7 +43,8 @@ func TestFirstAttachmentFailurePreservesSettings(t *testing.T) {
 }
 
 func TestDestroyCrossedOwnershipAndParenting(t *testing.T) {
-	a, b := NewForm(), NewForm()
+	f := NewForm()
+	a, b := NewPanel(f), NewPanel(f)
 	x, y, detached := NewButton(a), NewLabel(b), NewEdit(a)
 	if err := x.SetParent(b); err != nil {
 		t.Fatal(err)
@@ -79,14 +82,15 @@ func TestDestroyedOperationsPanic(t *testing.T) {
 }
 
 func TestIndividualDestroyUnlinksBothGraphs(t *testing.T) {
-	owner, parent := NewForm(), NewForm()
+	owner := NewForm()
+	parent := NewPanel(owner)
 	button := NewButton(owner)
 	if err := button.SetParent(parent); err != nil {
 		t.Fatal(err)
 	}
 	button.Destroy()
 	button.Destroy()
-	if !button.Destroyed() || len(owner.owned) != 0 || len(parent.children) != 0 {
+	if !button.Destroyed() || len(owner.owned) != 1 || len(parent.children) != 0 {
 		t.Fatal("destroy did not unlink both graphs")
 	}
 	owner.Destroy()
@@ -102,9 +106,9 @@ func TestAllControlsPrepareTextAndFormTitle(t *testing.T) {
 	controls := []interface {
 		SetText(string)
 		Text() string
-		SetParent(*Form) error
-		Owner() *Form
-		Parent() *Form
+		SetParent(Container) error
+		Owner() Component
+		Parent() Container
 	}{NewEdit(f), NewButton(f), NewLabel(f)}
 	for _, c := range controls {
 		c.SetText("Текст")

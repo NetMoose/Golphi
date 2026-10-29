@@ -16,10 +16,16 @@ func (f *Form) SetClientSize(width, height int) {
 // SetBounds задаёт фиксированное положение относительно внутренней области
 // Parent и минимальный размер в целых logical units. Native-тема может увеличить
 // размер. Координаты неотрицательны, минимальные размеры положительны.
-// Метод разрешён до Run; автоматического размещения и коррекции пересечений нет.
-func (c *control) SetBounds(x, y, width, height int) {
+// До Run доступен для всех контролов; после начала Run — только для живого
+// отсоединённого поддерева (вся цепочка Parent не достигает Form), независимо
+// от прежнего native-создания. Во время Run требуется UI-поток.
+// Автоматического размещения и коррекции пересечений нет.
+func (c *visual) SetBounds(x, y, width, height int) {
 	c.guardAlive()
-	c.guardGeometryPreparation()
+	guardPreparationThread()
+	if c.attached() {
+		c.guardGeometryPreparation()
+	}
 	if x < 0 || y < 0 || width <= 0 || height <= 0 {
 		panic("ui: bounds require nonnegative coordinates and positive size")
 	}
@@ -27,7 +33,12 @@ func (c *control) SetBounds(x, y, width, height int) {
 }
 
 func (c *component) guardGeometryPreparation() {
-	if c.started || (c.owner != nil && c.owner.started) || (c.parent != nil && c.parent.started) {
+	for p := c.parent; p != nil; p = p.componentIdentity().parent {
+		if p.componentIdentity().started {
+			panic("ui: geometry can only be configured before Run")
+		}
+	}
+	if c.started || (c.owner != nil && c.owner.componentIdentity().started) || (c.parent != nil && c.parent.componentIdentity().started) {
 		panic("ui: geometry can only be configured before Run")
 	}
 }

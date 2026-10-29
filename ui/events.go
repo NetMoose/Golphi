@@ -35,7 +35,7 @@ func (e *Edit) SetOnChange(handler func()) {
 
 func (c *component) eventsEnabled() bool {
 	return !c.destroyed && c.runtime != nil && c.runtime.eventsRunning() &&
-		(c.form != nil || (c.parent != nil && !c.parent.destroyed))
+		(c.form != nil || (c.parent != nil && !c.parent.componentIdentity().destroyed))
 }
 func (c *component) setText(text string) {
 	old := c.text

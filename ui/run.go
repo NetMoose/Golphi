@@ -31,18 +31,19 @@ func (f *Form) Run() (err error) {
 	// Include detached owned controls for latching and event cancellation, but
 	// create peers only for the visual children of this single main window.
 	seen := map[*component]bool{&f.component: true}
-	for c := range f.owned {
-		if !seen[c] {
-			seen[c] = true
-			r.participants = append(r.participants, c)
+	var collect func(*component)
+	collect = func(parent *component) {
+		for _, edges := range []map[*component]struct{}{parent.owned, parent.children} {
+			for c := range edges {
+				if !seen[c] {
+					seen[c] = true
+					r.participants = append(r.participants, c)
+					collect(c)
+				}
+			}
 		}
 	}
-	for c := range f.children {
-		if !seen[c] {
-			seen[c] = true
-			r.participants = append(r.participants, c)
-		}
-	}
+	collect(&f.component)
 	sort.Slice(r.participants, func(i, j int) bool { return r.participants[i].order < r.participants[j].order })
 	for _, c := range r.participants {
 		c.started = true
@@ -70,11 +71,16 @@ func (f *Form) Run() (err error) {
 		return nil
 	}
 	ordered := []*component{&f.component}
-	for _, c := range r.participants {
-		if c != &f.component && c.parent == f {
-			ordered = append(ordered, c)
+	var appendChildren func(*component)
+	appendChildren = func(parent *component) {
+		for _, c := range r.participants {
+			if c.parent != nil && c.parent.componentIdentity() == parent {
+				ordered = append(ordered, c)
+				appendChildren(c)
+			}
 		}
 	}
+	appendChildren(&f.component)
 	for _, c := range ordered {
 		bounds := c.bounds
 		if bounds.Width == 0 || bounds.Height == 0 {
@@ -86,7 +92,7 @@ func (f *Form) Run() (err error) {
 		}
 		cfg := backend.Config{Kind: c.kind, Text: c.text, Bounds: bounds}
 		if c.parent != nil {
-			cfg.Parent = r.peers[&c.parent.component]
+			cfg.Parent = r.peers[c.parent.componentIdentity()]
 		}
 		p, e := r.driver.Create(cfg)
 		if e != nil {
