@@ -141,11 +141,10 @@ func (d *driver) PrepareTree(c backend.TreeChange) (backend.TreeTransaction, err
 	}
 	return tx, nil
 }
-func (tx *treeTransaction) restoreInput(replacements map[backend.Peer]backend.Peer) error {
+
+// restoreInput restores the retained original peers during rollback only.
+func (tx *treeTransaction) restoreInput() error {
 	for id, s := range tx.inputs {
-		if replacements != nil {
-			id = replacements[id]
-		}
 		p, err := tx.d.lookup(id)
 		if err != nil {
 			return err
@@ -274,9 +273,6 @@ func (tx *treeTransaction) Commit() (backend.TreeResult, error) {
 		if err := tx.restoreFocus(tx.replacements); err != nil {
 			return r, err
 		}
-		if err := tx.restoreInput(tx.replacements); err != nil {
-			return r, err
-		}
 	}
 	for i, n := range c.Nodes {
 		if c.ToAttached && n.Kind == backend.Edit {
@@ -284,6 +280,14 @@ func (tx *treeTransaction) Commit() (backend.TreeResult, error) {
 			if err != nil {
 				return r, err
 			}
+			expectedText := n.Text
+			if saved, ok := tx.inputs[n.Peer]; ok {
+				expectedText = saved.Text
+			}
+			if s.Text != expectedText {
+				return r, errors.New("GTK recreated input text mismatch")
+			}
+			// Publish actual native positions rather than the cached snapshot.
 			r.Bindings[i].Input = &s
 		}
 	}
@@ -357,7 +361,7 @@ func (tx *treeTransaction) Rollback() error {
 		err = tx.restoreFocus(nil)
 	}
 	if err == nil {
-		err = tx.restoreInput(nil)
+		err = tx.restoreInput()
 	}
 	// Failed first attachments may already have been shown before a readiness
 	// check fails. Restore the visible tree synchronously, retaining references

@@ -230,10 +230,10 @@ func (d *driver) Create(c backend.Config) (backend.Peer, error) {
 	} else if c.Parent != 0 {
 		return 0, errors.New("GTK form cannot have parent")
 	}
-	if c.Input != nil {
-		if err := validInput(c.Text, c.Input); err != nil {
-			return 0, err
-		}
+	// A new Edit preserves the snapshot text, but its native positions are
+	// unspecified. Saved offsets must not prevent recreation.
+	if c.Input != nil && c.Input.Text != c.Text {
+		return 0, errors.New("GTK input text mismatch")
 	}
 	p := &peer{kind: c.Kind, parent: c.Parent, bounds: c.Bounds}
 	a := &d.api
@@ -287,9 +287,6 @@ func (d *driver) Create(c backend.Config) (backend.Peer, error) {
 	if err := d.SetText(id, c.Text); err != nil {
 		_ = d.Destroy(id)
 		return 0, err
-	}
-	if c.Kind == backend.Edit && c.Input != nil {
-		a.selectRegion(p.handle, int32(c.Input.Anchor), int32(c.Input.Caret))
 	}
 	d.connect(id, p)
 	return id, nil

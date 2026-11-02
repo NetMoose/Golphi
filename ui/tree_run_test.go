@@ -44,7 +44,7 @@ func (d *treeFake) Create(c backend.Config) (backend.Peer, error) {
 		d.inputs[p] = backend.InputState{Text: c.Text}
 		if c.Input != nil {
 			require(c.Input.Text == c.Text && !c.Input.Focused)
-			d.inputs[p] = *c.Input
+			// New peers retain their own initial positions, independent of the cache.
 		}
 	}
 	return p, err
@@ -131,7 +131,7 @@ func (x *treeFakeTransaction) Commit() (backend.TreeResult, error) {
 			saved, _ := x.d.SnapshotInput(p)
 			if n.Input != nil {
 				require(n.Input.Text == n.Text && !n.Input.Focused)
-				saved = *n.Input
+				// Materialization preserves text, not cached positions.
 			}
 			x.d.inputs[p] = saved
 			input = &saved

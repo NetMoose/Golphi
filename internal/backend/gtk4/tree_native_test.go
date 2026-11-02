@@ -34,10 +34,15 @@ func TestNativeTree(t *testing.T) {
 	a := create(backend.Panel, f, 200, 120)
 	b := create(backend.Panel, f, 200, 120)
 	state := backend.InputState{Text: "А😀Б𐐷В", Anchor: 4, Caret: 1}
+	beforePeers := len(d.peers)
+	if _, err := d.Create(backend.Config{Kind: backend.Edit, Parent: a, Text: "different", Input: &state, Bounds: backend.Bounds{Width: 180, Height: 30}}); err == nil || len(d.peers) != beforePeers {
+		t.Fatal("mismatched cached text must fail without allocating a peer")
+	}
 	e, err := d.Create(backend.Config{Kind: backend.Edit, Parent: a, Text: state.Text, Input: &state, Bounds: backend.Bounds{Width: 180, Height: 30}})
 	if err != nil {
 		t.Fatal(err)
 	}
+	d.api.selectRegion(d.peers[e].handle, 4, 1)
 	s, err := d.SnapshotInput(e)
 	if err != nil || s.Text != state.Text || s.Anchor != 4 || s.Caret != 1 {
 		t.Fatalf("startup snapshot=%+v err=%v", s, err)
@@ -106,9 +111,11 @@ func TestNativeTree(t *testing.T) {
 		t.Fatal(result)
 	}
 	s, err = d.SnapshotInput(e)
-	if err != nil || s.Anchor != 4 || s.Caret != 1 {
+	if err != nil || s.Text != state.Text || s != *result.Bindings[0].Input {
 		t.Fatal(s, err)
 	}
+	// Rollback uses the retained peer and must preserve its exact positions.
+	d.api.selectRegion(d.peers[e].handle, 4, 1)
 	// A failed readiness step must restore the former native allocation and
 	// route before returning an ordinary error.
 	allocate := d.api.allocate
@@ -133,18 +140,18 @@ func TestNativeTree(t *testing.T) {
 	}
 	// Fail after the replacement has taken focus/PRIMARY. Rollback must give
 	// ownership back to the old realized entry before hiding the replacement.
-	position := d.api.position
+	getEdit := d.api.getEdit
 	lastReplacement := d.next
-	d.api.position = func(h uintptr) int32 {
+	d.api.getEdit = func(h uintptr) string {
 		for id, p := range d.peers {
-			if id > lastReplacement && p.kind == backend.Edit && d.api.editableDelegate(p.handle) == h {
-				return 0
+			if id > lastReplacement && p.kind == backend.Edit && p.handle == h {
+				return "corrupted replacement text"
 			}
 		}
-		return position(h)
+		return getEdit(h)
 	}
 	failedFocusedMove := backend.ApplyTree(d, backend.TreeChange{FromAttached: true, ToAttached: true, Target: a, Nodes: nodes}, func(backend.TreeResult) { t.Error("published bad replacement input") }, func(*backend.TreeFailure) { t.Error("replacement rollback fatal") })
-	d.api.position = position
+	d.api.getEdit = getEdit
 	if failedFocusedMove == nil || failedFocusedMove.Fatal() {
 		t.Fatal(failedFocusedMove)
 	}
@@ -179,11 +186,13 @@ func TestNativeTree(t *testing.T) {
 	}
 	nodes = savedNodes
 	apply(true, false, 0)
-	if result.Bindings[0].Peer != 0 || result.Bindings[0].Input.Anchor != 4 {
+	if result.Bindings[0].Peer != 0 || result.Bindings[0].Input.Text != state.Text {
 		t.Fatal(result)
 	}
 	nodes[0].Peer = 0
 	nodes[0].Input = result.Bindings[0].Input
+	nodes[0].Input.Anchor = -1
+	nodes[0].Input.Caret = 999
 	apply(false, false, 0)
 	apply(false, true, a)
 	if result.Bindings[0].Peer == 0 || result.Bindings[0].Peer == e {
@@ -192,6 +201,10 @@ func TestNativeTree(t *testing.T) {
 	newID := result.Bindings[0].Peer
 	if width(d.peers[newID].handle) == 0 {
 		t.Fatal("attached Edit not synchronously allocated")
+	}
+	actual, snapshotErr := d.SnapshotInput(newID)
+	if snapshotErr != nil || actual.Text != state.Text || actual != *result.Bindings[0].Input || actual.Focused || d.api.windowFocus(d.peers[f].handle) != buttonFocus {
+		t.Fatalf("reattach native input/focus: %+v result=%+v err=%v", actual, result, snapshotErr)
 	}
 	oldToken := d.peers[newID].token
 	apply(false, false, 0)
@@ -423,7 +436,7 @@ func TestNativePanelClipping(t *testing.T) {
 
 // Mixed-subtree replacement must preserve the focused logical node (including
 // Button), leave external focus alone, and retire every old peer exactly once.
-func TestNativeReplacementSelection(t *testing.T) {
+func TestNativeReplacementTextFocus(t *testing.T) {
 	if os.Getenv("GOLPHI_GTK_NATIVE") != "1" {
 		t.Skip("set GOLPHI_GTK_NATIVE=1")
 	}
@@ -518,7 +531,7 @@ func TestNativeReplacementSelection(t *testing.T) {
 		}
 		check := func() {
 			s, e := d.SnapshotInput(edit)
-			if e != nil || s.Text != "А😀Б𐐷В" || s.Anchor != 4 || s.Caret != 1 || !d.descendant(d.api.windowFocus(d.peers[f].handle), d.peers[expectedFocus].handle) {
+			if e != nil || s.Text != "А😀Б𐐷В" || !d.descendant(d.api.windowFocus(d.peers[f].handle), d.peers[expectedFocus].handle) {
 				t.Fatalf("iteration %d input/focus %+v %v", i, s, e)
 			}
 		}

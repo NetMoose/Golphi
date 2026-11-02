@@ -2,6 +2,56 @@
 
 Изменение: [implement-dynamic-component-tree](../openspec/changes/implement-dynamic-component-tree/proposal.md). Реализация начата; результаты этого отчёта не означают завершения изменения.
 
+## Текущий объём после сокращения — 2026-11-02
+
+При пересоздании Edit гарантируется текст; восстановление курсора, диапазона и
+направления выделения отложено. Прямой перенос сохраняет фокус, повторное
+присоединение после detach не возвращает его. Для сохраняемого native Edit
+позиции и активный конец по-прежнему проверяются при переносе и откате.
+Тихая материализация, pending/base, ресурсы и диагностика остаются обязательными.
+Задача 4.5 согласует код и тесты с этой границей; общий Windows-прогон новой
+сборки и оставшаяся приёмка 4.2–4.4 ещё нужны.
+
+Ниже сохранена история экспериментов с прежними требованиями и сборками.
+Исторические проверки восстановления выделения при пересоздании не являются
+требованием текущей приёмки, а старые пакеты не подходят для новой проверки.
+
+### Проверка реализации 4.5
+
+На Linux прошли fake/core tests, полный `CGO_ENABLED=0 go test -count=1 ./...`,
+Linux/Windows vet, GTK-набор из восьми тестов с включёнными native-проверками и core→GTK→core
+(`OnChange=4/2`, `nativeChanges=12`, `coreReleased=7`). Дополнительные три
+прогона Tree/ReplacementTextFocus с CSD подтвердили клиентское начало координат
+и сохранение текста/фокуса. Windows backend/UI test EXE успешно cross-собраны;
+это не Windows native PASS. Strict validation изменения прошла.
+
+Новый пакет: `artifacts/golphi-dynamic-tree-text-only-windows.zip`,
+[manifest](../artifacts/dynamic-tree-text-only-build.txt). В новой папке выполнить:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-dynamic-tree-native-windows.ps1 -BackendExe .\golphi-win32.test.exe -UIExe .\golphi-ui.test.exe
+```
+
+Runner запускает broad suite, retained-HWND и core/native/UI; все три должны
+дать PASS без SKIP. Передать папку `artifacts/dynamic-tree-windows` целиком.
+Русский .ps1 сохранён с UTF-8 BOM и проверен внутри архива. Ручное продолжение
+обратного выделения уже подтверждено ниже; повторять его сейчас не требуется.
+Clipping/внешний фокус в ручном режиме и оставшаяся приёмка остаются открытыми.
+
+### Полученные результаты сохраняемого HWND
+
+Пользовательский запуск 2 ноября на Windows build 26100 завершился PASS:
+[backend](../artifacts/retained-hwnd-windows-20261102/backend-retained.log.txt),
+[core/native/UI](../artifacts/retained-hwnd-windows-20261102/ui-native.log.txt),
+[реальное обратное выделение в транзакции](../artifacts/retained-hwnd-windows-20261102/keyboard-transaction.log.txt).
+[Хеши сборок](../artifacts/retained-hwnd-windows-20261102/environment.txt)
+совпадают с пакетом retained-HWND: backend `7e642199…`, UI `c3828ec9…`.
+Все три процесса вернули 0. Клавиатурный сценарий сохранил диапазон `[2,5]`
+и активный нижний конец; настоящий Shift+Right продолжил его до `[3,5]`.
+Это свидетельство полной транзакции сохраняемого HWND, а не нового пути
+пересоздания. Исходные пользовательские файлы сохранены отдельно; копии в
+репозитории нормализованы в UTF-8/LF, пробелы пустой строки UI-журнала удалены.
+
 ## Исходная точка
 
 Ветка `codex/dynamic-component-tree` создана от актуальной `develop`, коммит `82605a8`, без worktree. Исходные отслеживаемые файлы чистые; единственные подготовленные файлы — согласованное предложение. Базовая команда `CGO_ENABLED=0 GOCACHE=/tmp/golphi-gocache GOMODCACHE=/tmp/golphi-gomodcache GOPROXY=off go test -count=1 ./...` прошла. Этот базовый запуск без native opt-in не заменяет нативные проверки.

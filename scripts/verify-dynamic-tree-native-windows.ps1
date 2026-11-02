@@ -53,8 +53,9 @@ function Invoke-NativeTest([string]$Executable, [string]$Name, [string]$LogName)
     }
 }
 Invoke-NativeTest $BackendExe 'TestNativeDynamicTreeWin32' 'backend-native.log'
+Invoke-NativeTest $BackendExe 'TestNativeRetainedHWNDTransferWin32' 'backend-retained.log'
 Invoke-NativeTest $UIExe 'TestNativeDynamicTreeIntegration' 'ui-native.log'
-Write-Host "Обе автоматические нативные проверки PASS. Логи: $LogDirectory."
+Write-Host "Все три автоматические нативные проверки PASS. Логи: $LogDirectory."
 if ($Manual) {
     $env:GOLPHI_NATIVE_TREE_MANUAL = '1'
     Write-Host 'Отдельная ручная проверка: 180 секунд. Команды вводятся в эту консоль; нужен PID внешнего Notepad.'

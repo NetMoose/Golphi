@@ -41,11 +41,11 @@ func init() {
 				peer := func() backend.Peer { return r.peers[&e.component] }
 				if mode == "initial" {
 					require(root.SetParent(left) == nil)
-					assertTreeInput(d, peer(), backend.InputState{Text: "А😀Б𐐷В", Anchor: 5, Caret: 5})
+					assertTreeInput(d, peer(), backend.InputState{Text: "А😀Б𐐷В"})
 					return
 				}
 				if mode == "startup" {
-					assertTreeInput(d, peer(), backend.InputState{Text: "Ж😀Б𐐷В", Anchor: 5, Caret: 5})
+					assertTreeInput(d, peer(), backend.InputState{Text: "Ж😀Б𐐷В"})
 					return
 				}
 				// Fresh native state differs from the core's cached text. Reversed scalar
@@ -57,7 +57,9 @@ func init() {
 				d.inputs[secondPeer] = backend.InputState{Anchor: 1, Caret: 2}
 				d.focus = peer()
 				want := backend.InputState{Text: "Я😀Ж𐐷Ю", Anchor: 4, Caret: 1, Focused: true}
+				retainedPeer := peer()
 				require(root.SetParent(right) == nil)
+				require(peer() == retainedPeer)
 				assertTreeInput(d, peer(), want)
 				require(e.Text() == want.Text)
 				// A failed late descendant must restore actual changed native input and
@@ -99,15 +101,19 @@ func init() {
 					want = backend.InputState{}
 				}
 				require(root.SetParent(nil) == nil && root.SetParent(parking) == nil)
-				// Failed materialization must not consume saved positions; retry must
-				// restore them into new physical peers.
+				// Failed materialization must not consume the logical snapshot. New
+				// peers may choose different positions while preserving text and silence.
+				require(e.savedInput != nil && e.savedInput.Anchor == want.Anchor && e.savedInput.Caret == want.Caret)
 				d.fail = true
 				require(errors.Is(root.SetParent(right), lateTreeError))
 				require(root.Parent() == parking)
+				require(e.savedInput != nil && e.savedInput.Anchor == want.Anchor && e.savedInput.Caret == want.Caret)
 				d.fail = false
 				require(root.SetParent(right) == nil)
+				require(peer() != retainedPeer)
+				want.Anchor, want.Caret = 0, 0 // fake new-peer default differs from retained selection
 				assertTreeInput(d, peer(), want)
-				assertTreeInput(d, r.peers[&second.component], backend.InputState{Text: "🙂Я𐐷", Anchor: 1, Caret: 2})
+				assertTreeInput(d, r.peers[&second.component], backend.InputState{Text: "🙂Я𐐷"})
 				require(d.focus == r.peers[&outside.component] && changes == 0)
 			}
 			require(f.Run() == nil)
@@ -115,8 +121,8 @@ func init() {
 	}
 }
 
-// Removing cache publication/request forwarding or the real-change scalar
-// collapse breaks physical reattachment; same-value collapse breaks "same".
+// Retained peers preserve endpoints; detached logical snapshots retain their
+// SetText rules, while recreated peers report their own actual positions.
 func TestTreeInputState(t *testing.T) {
 	for _, mode := range []string{"unchanged", "same", "changed", "changed-back", "empty", "initial", "startup"} {
 		t.Run(mode, func(t *testing.T) { runGraphScenario(t, "tree-input-"+mode) })

@@ -40,12 +40,13 @@ func TestNativeDynamicTreeWin32(t *testing.T) {
 	f := create(backend.Form, 0, "", nil)
 	a := create(backend.Panel, f, "", nil)
 	b := create(backend.Panel, f, "", nil)
-	want := backend.InputState{Text: "А🌍Б𐐷В", Anchor: 4, Caret: 1}
+	want := backend.InputState{Text: "А🌍Б𐐷В", Anchor: 1, Caret: 4}
 	e := create(backend.Edit, a, want.Text, &want)
 	got, err := d.SnapshotInput(e)
-	if err != nil || got != want {
+	if err != nil || got.Text != want.Text || got.Focused {
 		t.Fatalf("startup input: %+v %v", got, err)
 	}
+	want = got // Retained moves certify the actual new native input state.
 	node := backend.TreeNode{ID: 1, Peer: e, Kind: backend.Edit, Text: want.Text, Bounds: backend.Bounds{Width: 200, Height: 80}}
 	apply := func(c backend.TreeChange) backend.TreeResult {
 		t.Helper()
@@ -67,6 +68,20 @@ func TestNativeDynamicTreeWin32(t *testing.T) {
 	if err != nil || got != want {
 		t.Fatalf("move input: %+v %v", got, err)
 	}
+	// Contradictory prepared/snapshot text must fail atomically even though
+	// saved positions are no longer restored on creation.
+	mismatched := backend.InputState{Text: "старый текст", Anchor: -1, Caret: 999}
+	beforeMismatch := len(d.peers)
+	mismatch := backend.TreeChange{ToAttached: true, Target: b, Nodes: []backend.TreeNode{{ID: 1, Kind: backend.Edit, Text: "новый текст", Input: &mismatched, Bounds: node.Bounds}}}
+	if fail := backend.ApplyTree(d, mismatch, func(backend.TreeResult) { t.Fatal("published text mismatch") }, func(f *backend.TreeFailure) { t.Fatal(f) }); fail == nil {
+		t.Fatal("accepted mismatched prepared text")
+	}
+	if err := d.releaseRetired(); err != nil {
+		t.Fatal(err)
+	}
+	if len(d.peers) != beforeMismatch || d.fenced || d.deliveryStopped {
+		t.Fatal("text mismatch did not preserve usable runtime/resources")
+	}
 	// Invalid late child forces rollback after hidden resources were created.
 	before := len(d.peers)
 	bad := backend.TreeChange{ToAttached: true, Target: b, Nodes: []backend.TreeNode{{ID: 1, Kind: backend.Panel, Bounds: backend.Bounds{Width: 100, Height: 50}}, {ID: 2, Parent: 1, Kind: backend.Edit, Text: "bad\x00text", Bounds: backend.Bounds{Width: 80, Height: 20}}}}
@@ -79,6 +94,7 @@ func TestNativeDynamicTreeWin32(t *testing.T) {
 	if len(d.peers) != before {
 		t.Fatal("failed attempt leaked peers")
 	}
+	detachedHandle := d.peers[e].hwnd
 	r = apply(backend.TreeChange{FromAttached: true, Nodes: []backend.TreeNode{node}})
 	if r.Bindings[0].Peer != 0 || r.Bindings[0].Input == nil {
 		t.Fatal(r)
@@ -89,12 +105,18 @@ func TestNativeDynamicTreeWin32(t *testing.T) {
 	if err := d.releaseRetired(); err != nil {
 		t.Fatal(err)
 	}
+	if alive, _, _ := d.api["IsWindow"].Call(detachedHandle); alive != 0 {
+		t.Fatal("detached HWND still alive after release")
+	}
 	node.Peer = 0
 	node.Input = r.Bindings[0].Input
 	r = apply(backend.TreeChange{ToAttached: true, Target: a, Nodes: []backend.TreeNode{node}})
+	if r.Bindings[0].Peer == e {
+		t.Fatal("reattach reused retired peer identity")
+	}
 	got, err = d.SnapshotInput(r.Bindings[0].Peer)
-	if err != nil || got != want {
-		t.Fatalf("reattach input: %+v %v", got, err)
+	if err != nil || got.Text != want.Text || got.Focused || r.Bindings[0].Input == nil || *r.Bindings[0].Input != got {
+		t.Fatalf("reattach input: %+v %v binding=%+v", got, err, r.Bindings[0])
 	}
 	// An outside Button owns focus: moving the Edit must leave it there.
 	outside := create(backend.Button, b, "outside", nil)
@@ -106,6 +128,21 @@ func TestNativeDynamicTreeWin32(t *testing.T) {
 	if focus != d.peers[outside].hwnd {
 		t.Fatal("outside focus setup failed")
 	}
+	// Recreate with silently prepared text and stale positions. Neither those
+	// positions nor saved focus may constrain the new HWND.
+	node.Peer = r.Bindings[0].Peer
+	r = apply(backend.TreeChange{FromAttached: true, Nodes: []backend.TreeNode{node}})
+	if err := d.releaseRetired(); err != nil {
+		t.Fatal(err)
+	}
+	prepared := backend.InputState{Text: "А🌍Б𐐷В подготовлено", Anchor: -1, Caret: 999, Focused: true}
+	node.Peer, node.Text, node.Input = 0, prepared.Text, &prepared
+	r = apply(backend.TreeChange{ToAttached: true, Target: a, Nodes: []backend.TreeNode{node}})
+	got, err = d.SnapshotInput(r.Bindings[0].Peer)
+	if err != nil || got.Text != prepared.Text || got.Focused || r.Bindings[0].Input == nil || *r.Bindings[0].Input != got {
+		t.Fatalf("prepared text recreation: %+v %v binding=%+v", got, err, r.Bindings[0])
+	}
+	want = got
 	node.Peer = r.Bindings[0].Peer
 	node.Input = nil
 	apply(backend.TreeChange{FromAttached: true, ToAttached: true, Target: b, Nodes: []backend.TreeNode{node}})
@@ -113,59 +150,19 @@ func TestNativeDynamicTreeWin32(t *testing.T) {
 	if focus != d.peers[outside].hwnd {
 		t.Fatal("move stole outside focus")
 	}
-	// Focused reverse selection uses native caret direction, not ordered EM_GETSEL.
-	logNativeInputEvidence(t, d, node.Peer, "before-SetFocus")
+	// Retained Unicode selection remains guaranteed. Real keyboard reverse
+	// selection and its continuation have a separate integration test.
 	d.api["SetFocus"].Call(d.peers[node.Peer].hwnd)
-	logNativeInputEvidence(t, d, node.Peer, "after-SetFocus-before-EM_SETSEL")
+	want.Anchor, want.Caret = 1, 4
 	if err := d.restoreInput(node.Peer, want); err != nil {
 		t.Fatal(err)
 	}
-	logNativeInputEvidence(t, d, node.Peer, "after-EM_SETSEL-before-ApplyTree")
 	apply(backend.TreeChange{FromAttached: true, ToAttached: true, Target: a, Nodes: []backend.TreeNode{node}})
-	logNativeInputEvidence(t, d, node.Peer, "after-ApplyTree-before-SnapshotInput")
-	focused, err := d.SnapshotInput(node.Peer)
 	expected := want
 	expected.Focused = true
+	focused, err := d.SnapshotInput(node.Peer)
 	if err != nil || focused != expected {
-		t.Fatalf("focused reverse move: %+v %v", focused, err)
-	}
-	// Switching direction while retaining the same ordered range must change
-	// the real active endpoint, not merely its cached label.
-	for _, ends := range [][2]int{{1, 4}, {4, 1}, {1, 4}, {4, 1}} {
-		state := want
-		state.Anchor = ends[0]
-		state.Caret = ends[1]
-		if err := d.restoreInput(node.Peer, state); err != nil {
-			t.Fatalf("same-range restore %v: %v", ends, err)
-		}
-		logNativeInputEvidence(t, d, node.Peer, "same-ordered-range-after-verified-restore")
-		lo, hi := d.selection(d.peers[node.Peer].hwnd)
-		if lo != 1 || hi != 6 {
-			t.Fatalf("same-range UTF16 changed: [%d,%d]", lo, hi)
-		}
-		observed, err := d.SnapshotInput(node.Peer)
-		state.Focused = true
-		if err != nil || observed != state {
-			t.Fatalf("same-range direction %v: %+v %v", ends, observed, err)
-		}
-	}
-	// Native forward/reverse selections reaching the end of text exercise the
-	// trusted explicit EM_SETSEL observation when EM_POSFROMCHAR(end) is unavailable.
-	for _, ends := range [][2]int{{1, 5}, {5, 1}} {
-		endState := want
-		endState.Anchor = ends[0]
-		endState.Caret = ends[1]
-		if err := d.restoreInput(node.Peer, endState); err != nil {
-			t.Fatal(err)
-		}
-		actual, err := d.SnapshotInput(node.Peer)
-		endState.Focused = true
-		if err != nil || actual != endState {
-			t.Fatalf("text-end input %+v: %+v %v", ends, actual, err)
-		}
-	}
-	if err := d.restoreInput(node.Peer, want); err != nil {
-		t.Fatal(err)
+		t.Fatalf("focused forward Unicode move: %+v %v", focused, err)
 	}
 	// A dead native target forces failure after the transaction has snapshotted input.
 	dead := create(backend.Panel, f, "", nil)

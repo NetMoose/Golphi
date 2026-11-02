@@ -1,0 +1,6 @@
+=== RUN   TestNativeDynamicTreeIntegration
+    tree_native_test.go:184: native tree PASS: OnChange=4/2 nativeChanges=8 coreReleased=7; old-epoch events=injected
+
+--- PASS: TestNativeDynamicTreeIntegration (0.36s)
+PASS
+EXIT_CODE=0

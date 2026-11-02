@@ -1,0 +1,7 @@
+Task 4.5; baseline 864c891 plus task changes. CGO_ENABLED=0 GOOS=windows GOARCH=amd64; go test -c -buildvcs=false. Native Windows execution pending.
+61010ceb24a59110c5a9d8c5b443d7e9372a8da478733f291c1d6b2af7404163  DETAILS-RU.md
+5fb5214b20d47557d7307b63a326bb22bb61add0b47362a618aca49075638379  README-RU.md
+6840f859b08377ff4582b03f4033f8e21d7ea6d0d01a9950ca30bced580e141d  golphi-ui.test.exe
+8550afa508293cdd08401d7535a5d724de1ccf2cd75daa5ebf72c9a4c239dcb0  golphi-win32.test.exe
+3364d3ebe43ddf1810b0d428d9ecce7f3e1558ce1809004d63213196ffe2a777  scripts/verify-dynamic-tree-native-windows.ps1
+ZIP SHA256=4fca8bd79dcf07eb9dea2b56a4a6e0ae3e0237a4f6933c19d356291e64c77c42

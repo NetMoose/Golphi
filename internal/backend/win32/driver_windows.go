@@ -313,12 +313,18 @@ func (d *driver) Create(c backend.Config) (backend.Peer, error) {
 		}
 		p := d.peers[id]
 		p.oldProc = old
-		p.selectionKnown = true
+		// A recreated Edit preserves text, not saved positions. Seed only the
+		// collapsed selection actually observed on this new HWND.
+		lo, hi := d.selection(handle)
+		p.selectionAnchor, p.selectionCaret = lo, hi
+		p.selectionKnown = lo == hi
 		d.peers[id] = p
-		if c.Input != nil {
-			if err := d.restoreInput(id, *c.Input); err != nil {
-				return 0, errors.Join(err, d.Destroy(id))
-			}
+		actual, err := d.Text(id)
+		if err != nil {
+			return 0, errors.Join(err, d.Destroy(id))
+		}
+		if actual != c.Text || (c.Input != nil && actual != c.Input.Text) {
+			return 0, errors.Join(errors.New("win32: effective text differs during Edit creation"), d.Destroy(id))
 		}
 	}
 	return id, nil

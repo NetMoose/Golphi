@@ -51,3 +51,12 @@ opt-in тест не означают подтверждения native пове
 не подменяют реальные сбои native API.
 
 Фактический Linux-прогон 2026-10-29: `DISPLAY=:0 GDK_BACKEND=x11 GOLPHI_NATIVE_TREE=1 CGO_ENABLED=0 GOCACHE=/tmp/golphi-gocache GOMODCACHE=/tmp/golphi-gomodcache GOPROXY=off go test ./ui -run '^TestNativeDynamicTreeIntegration$' -v -count=1` — PASS. Вывод: `OnChange=4/2 nativeChanges=12 coreReleased=7; old-epoch events=injected`. Окружение: Linux Mint 22.3 amd64, GTK 4.14.5, X11, Go 1.26.5; переменные масштаба не заданы.
+
+Граница этапа 4.5 (2 ноября 2026): приведённые выше результаты 29 октября —
+исторические свидетельства, а не повторная приёмка изменённой реализации.
+Сценарии detach/reattach сохраняют проверки текста, новой базы/pending,
+поздних поколений, тишины и ресурсов. Позиции пересозданного Edit не являются
+условием успеха. Сохранение курсора/выделения и активного конца относится к
+сохраняемому native Edit и обычному откату к нему; восстановление позиций
+нового peer перенесено на следующий этап. Фокус при прямом переносе и отсутствие
+его захвата при reattach остаются обязательными.

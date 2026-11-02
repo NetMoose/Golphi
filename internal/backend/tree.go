@@ -11,6 +11,8 @@ type NodeID uint64
 
 // InputState uses Unicode scalar offsets, never UTF-8 bytes or UTF-16 units.
 // Anchor and Caret describe the selection's endpoints in the effective Text.
+// Positions must survive retained-peer moves and rollback to the original peer.
+// Recreated peers report actual positions; restoring old positions is deferred.
 // Focused is observed state, not a request to steal focus on attachment.
 type InputState struct {
 	Text          string
@@ -59,7 +61,8 @@ type CleanupStep struct {
 
 // TreeTransaction owns all attempted resources until Finish. Prepare fences
 // application delivery before any native work. Commit returns only after the
-// entire subtree and input state are synchronously ready (without paint wait).
+// entire subtree and guaranteed input state are ready (without paint wait).
+// Text survives recreation; positions are guaranteed only for retained peers.
 // Any Commit failure requires Rollback, even if no mutation appeared to occur.
 // Rollback returning nil certifies the entire old working state is restored;
 // resource-release failures belong to Cleanup, not Rollback.

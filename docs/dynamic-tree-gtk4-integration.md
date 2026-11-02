@@ -13,7 +13,7 @@ the accepted MVP sizing policy.
 
 Transactions fence native delivery before snapshots. Moves snapshot fresh Edit input and the window's exact focus widget.
 An attached subtree containing Edit is recreated in full while the old subtree
-remains realized. Focus and selection transfer to the new peers before the old
+remains realized. Text and the focused logical control transfer to the new peers before the old
 root is hidden/unparented. Subtrees without Edit retain their native objects and
 reparent the root. Dynamic creation is initially hidden. Before
 returning successful bindings, the driver shows the complete subtree and invokes
@@ -24,7 +24,9 @@ A GskTransform translation preserves that origin, including the CSD titlebar
 offset; gtk_widget_allocate consumes the transform. This is specific to the
 GtkWindow content translation, not a general arbitrary-transform guarantee.
 It verifies nonzero allocations, restores the exact window focus target and
-restores/checks selection. No production sleep or nested event dispatch is used.
+checks the new native text. Cursor/selection positions on recreated peers are
+unspecified, and bindings publish their actual native state. No production sleep
+or nested event dispatch is used.
 A failed readiness check rolls back the parent, allocation, focus and input.
 Rollback verifies the original subtree has usable allocation; failure latches
 native delivery shutdown and reports a fatal restoration error. For replacement,
@@ -35,7 +37,9 @@ GTK character offsets represent Unicode scalar positions here. GtkEntry's
 editable delegate is essential: gtk_editable_get_position on GtkEntry goes
 through its delegating selection implementation and can return the sorted end
 for reversed selection. Reading its GtkText delegate yields the actual caret.
-Startup and attachment apply prepared positions without requesting focus.
+Startup and attachment preserve prepared text without applying cached positions
+or requesting focus. Cached text must match the configuration; stale positions
+do not prevent recreation.
 Detachment returns an owned input snapshot with Focused=false; reattachment does
 not restore focus. Moves preserve the focused logical Button or Edit even when peers are replaced.
 
@@ -54,7 +58,7 @@ them. Merely returning from the Go callback is not treated as leaving the native
 signal emission. Native tests use g_object_weak_ref to observe actual object
 finalization, not just registry removal. No RSS decrease is required.
 
-## Verification, 2026-10-29
+## Historical verification, 2026-10-29
 
 Commands (native command required local desktop access outside the restricted
 socket sandbox):
@@ -145,3 +149,39 @@ Additional source references:
 This targeted CSD regression does not establish a new decoration, scale or
 backend support matrix. The former direct-Edit-move test result is superseded by
 the activated-window replacement acceptance above.
+
+
+## Task 4.5 scope alignment, 2026-11-02
+
+The current guarantee excludes cursor/selection restoration when GTK creates a
+new Edit, including its replacement path for direct moves. Original peers kept
+for rollback still restore and verify exact input positions and focus. The
+2026-10-29 selection observations above are historical evidence, not an acceptance
+requirement for recreated Edit in this stage.
+
+`TestNativeTree` now supplies invalid cached offsets during reattachment: text,
+actual binding state, external focus and quiet events must still be correct.
+It rejects mismatched cached text before allocation. Replacement failure injection
+now corrupts text readback rather than requiring saved offsets, and verifies exact
+reverse selection on the retained original peer after rollback. Unicode snapshot,
+clipping, partial-creation failure, fatal restoration, stale routes and deferred
+finalization checks remain enabled. `TestNativeReplacementTextFocus` retains all
+nine mixed-subtree moves, focus cases and old-peer finalization checks, with native
+text rather than recreated positions as its input-state acceptance condition.
+
+Regression evidence: before the production fix, the revised `TestNativeTree`
+failed at reattachment with `invalid GTK input state`. After the fix the full
+GTK suite passed (8 tests, 1.956s) on X11 DISPLAY=:0. These runs required local
+display access outside the socket sandbox. The old `TestNativeReplacementSelection`
+name in historical commands refers to the former selection scope; use
+`TestNativeReplacementTextFocus` in current targeted commands.
+
+After adding the explicit mismatched-text regression, the targeted CSD command
+passed three repetitions (3.871s), preserving root bounds `[0,46,640,434]`:
+
+```sh
+CGO_ENABLED=0 GOCACHE=/tmp/golphi-gocache GOMODCACHE=/tmp/golphi-gomodcache GOPROXY=off GOLPHI_GTK_NATIVE=1 DISPLAY=:0 GDK_BACKEND=x11 GTK_CSD=1 go test ./internal/backend/gtk4 -run 'TestNative(Tree|ReplacementTextFocus)$' -count=3 -v -timeout 30s
+```
+
+GTK vet and the scoped whitespace check also passed. Windows results and the
+remaining full-change acceptance are tracked separately.
