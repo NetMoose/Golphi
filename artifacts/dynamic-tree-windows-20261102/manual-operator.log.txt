@@ -1,0 +1,14 @@
+=== RUN   TestNativeDynamicTreeManual
+AUTO_SETUP outer={left:0 top:0 right:220 bottom:110} inner={left:0 top:0 right:180 bottom:70} dpi=96; screenshot required; no visual PASS inferred
+MANUAL: inspect clipping and save screenshot. Type clip-pass or fail.
+MANUAL: type arm <Notepad PID>, then activate that Notepad window. The move waits for that exact foreground PID.
+MANUAL: after MOVE log, confirm Notepad stayed active with focus-pass. Type done to finish. Timeout: 180s.
+USER_CONFIRM clipping=yes (operator observation; screenshot required)
+ARMED target_pid=4688; activate that external application now
+AUTO_MOVE pid=4688 foreground_before=0x404b8 foreground_after=0x404b8 failure=<nil>
+AUTO_CHECK foreground HWND unchanged; panel client sizes unchanged. Return to console and type focus-pass, then done.
+USER_CONFIRM foreground_stayed=yes (operator observation)
+MANUAL_WORKFLOW_COMPLETE: confirmations recorded; automated PASS is not pixel clipping proof
+--- PASS: TestNativeDynamicTreeManual (40.09s)
+PASS
+EXIT_CODE=0
