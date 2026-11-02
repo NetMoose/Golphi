@@ -2,6 +2,62 @@
 
 Изменение: [implement-dynamic-component-tree](../openspec/changes/implement-dynamic-component-tree/proposal.md). Реализация начата; результаты этого отчёта не означают завершения изменения.
 
+## Итоговое review этапа 4.4 — 2026-11-02
+
+Проверен нативный этап от `111139c` до `c837d7d`: отдельное review GTK4,
+отдельное Win32 и общее core/backend review. GTK4 замечаний не получил.
+Win32 и общее review независимо выявили один дефект: ресурсы неудачной
+попытки присоединения попадали в очередь успешных отложенных удалений.
+Ошибка их освобождения завершала Run после успешного отката, вместо
+сохранения работоспособного приложения и диагностики обычной ошибки.
+
+До исправления прошли полный `CGO_ENABLED=0 go test -count=1 ./...`,
+Linux/Windows `go vet ./...`, `go test -race -count=1 ./ui ./internal/backend`,
+GTK-набор из восьми тестов с `GOLPHI_GTK_NATIVE=1` и
+core→GTK→core с `GOLPHI_NATIVE_TREE=1`. GTK: 2.447s, core/native: 0.192s,
+OnChange=4/2, nativeChanges=12, coreReleased=7. Окружение: Go 1.26.5,
+Linux amd64, GTK 4.14.5, X11 DISPLAY=:0. Offline-кеш purego в /tmp сначала
+отсутствовал; восстановлен из локального кеша, после чего проверки прошли.
+Windows cross-build до исправления дал в точности хеши EXE принятого прогона
+2 ноября. Strict validation изменения и пяти основных specs прошла.
+
+Исправление вызывает очистку только новых HWND неудачной попытки через
+CleanupStep до возврата SetParent. Новые peers не владеют текущим прикладным
+callback, технические native-вызовы завершились, доставка под fence запрещена.
+Rollback сначала скрывает созданный корень; ошибка его Destroy сохраняется
+в диагностике операции и не превращается в loop error. Неосвобождённые peers
+остаются учтёнными без event routes для существующего финального Close.
+Успешные отсоединения сохраняют прежнюю отсрочку до безопасного выхода из callback.
+
+Новая нативная регрессия `TestNativeAbortedTreeCleanupWin32` проверяет поздний
+отказ создания с ошибкой DestroyWindow, тот же случай внутри callback и отказ
+после показа нового корня внутри callback. Проверяются обе причины ошибки,
+нефатальный исход, скрытие и отключение маршрутов, отсутствие loop retry,
+продолжение старых событий и успешное последующее присоединение. Сбой
+DestroyWindow внедрён тестом; это не наблюдавшийся системный отказ Windows.
+После исправления полный CGO=0 набор, Windows vet и cross-build backend/UI прошли.
+
+Пакет для автоматического повтора:
+`artifacts/golphi-dynamic-tree-cleanup-review-windows.zip`,
+[manifest](../artifacts/dynamic-tree-cleanup-review-build.txt). Из новой папки:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-dynamic-tree-native-windows.ps1 -BackendExe .\golphi-win32.test.exe -UIExe .\golphi-ui.test.exe
+```
+
+Четыре автоматических теста: новая регрессия, широкий backend, retained HWND,
+core/native/UI. Передать всю папку `artifacts/dynamic-tree-windows`, включая
+`backend-aborted-cleanup.log`. Русский runner и README в UTF-8 с BOM, содержимое
+архива и SHA256 проверены. Новый нативный результат пока не получен.
+
+Устаревшие утверждения об отсутствии Windows-прогона исправлены в текущей
+матрице core/native и комментарии пакета ui. Исторические результаты ниже
+остаются свидетельствами своих сборок. Повторное review Win32 и общей интеграции подтвердило исправление без новых
+замечаний. Задача 4.4 пока открыта: требуется нативный автоматический
+Windows-прогон исправленной сборки.
+Ручные clipping/внешний фокус и обратное клавиатурное выделение повторять
+не требуется. Этап 5 и остальные Open Questions не закрываются.
+
 ## Windows-приёмка задач 4.2–4.3 — 2026-11-02
 
 Пользователь проверил сборку задачи 4.5 на Windows 11 amd64 build 26100,

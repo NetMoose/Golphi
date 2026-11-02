@@ -40,8 +40,8 @@ registry, deferred retirements и callback closures должны быть пус
 
 | Проверка | Linux GTK | Windows Win32 |
 |---|---|---|
-| Сборка тестов | PASS, вместе с нативным тестом | cross-build; native запуск ожидается |
-| Реальный dynamic core→native→core | PASS, 2026-10-29 | ожидается запуск пользователем |
+| Сборка тестов | PASS, вместе с нативным тестом | PASS, cross-build и запуск переданной сборки |
+| Реальный dynamic core→native→core | PASS, повторён 2026-11-02 | PASS, 2026-11-02; [журнал](../artifacts/dynamic-tree-windows-20261102/ui-native.log.txt) |
 | Старое поколение через callback ядра | внедрение в реальном сценарии | внедрение в реальном сценарии |
 | Late callback физического native root | ответственность тестов адаптера | ответственность тестов адаптера |
 

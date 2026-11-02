@@ -202,6 +202,11 @@ func (tx *treeTransaction) Rollback() (err error) {
 	}()
 	d := tx.d
 	var errs []error
+	if len(tx.created) > 0 {
+		// Commit may already have shown new peers before focus verification
+		// failed. Keep the aborted subtree hidden even if its release fails.
+		d.api["ShowWindow"].Call(d.peers[tx.created[0]].hwnd, 0)
+	}
 	if tx.mutated {
 		root := tx.change.Nodes[0].Peer
 		if e := d.place(root, tx.oldRoot.parent, tx.oldRoot.bounds); e != nil {
@@ -217,7 +222,21 @@ func (tx *treeTransaction) Rollback() (err error) {
 	}
 	return errors.Join(errs...)
 }
-func (tx *treeTransaction) Cleanup() []backend.CleanupStep { return nil } // all attempt HWNDs retained until outside native callback
+func (tx *treeTransaction) Cleanup() []backend.CleanupStep {
+	if len(tx.created) == 0 {
+		return nil
+	}
+	// Only this attempt's new HWNDs are released here. They cannot own the
+	// suspended application callback: they did not exist when it began, and
+	// the transaction fence prevented new application callbacks during creation.
+	// DestroyWindow cascades through the new subtree. Retained original peers
+	// still use the callback-guarded retirement path after successful detach.
+	root := tx.created[0]
+	return []backend.CleanupStep{{
+		Operation: fmt.Sprintf("win32 aborted tree peer %d", root),
+		Run:       func() error { return tx.d.Destroy(root) },
+	}}
+}
 func (tx *treeTransaction) Finish() {
 	d := tx.d
 	if tx.committed {
@@ -235,11 +254,13 @@ func (tx *treeTransaction) Finish() {
 		}
 	} else {
 		for _, id := range tx.created {
-			delete(d.byHWND, d.peers[id].hwnd)
+			if p, ok := d.peers[id]; ok {
+				delete(d.byHWND, p.hwnd)
+			}
 		}
-		if len(tx.created) > 0 {
-			d.retired = append(d.retired, tx.created[0])
-		}
+		// Failed releases remain owned by peers for the existing final Close.
+		// Do not enqueue them as successful detachments: an ordinary cleanup
+		// failure must not become a loop error or an immediate retry.
 	}
 	d.fenced = false
 }

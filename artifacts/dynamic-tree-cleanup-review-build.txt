@@ -1,0 +1,7 @@
+Task 4.4 review fix; baseline c837d7d plus cleanup fix. CGO_ENABLED=0 GOOS=windows GOARCH=amd64; go test -c -buildvcs=false. Native Windows regression pending.
+ce743ad029db4a19b4622e2abff8577f55cdfc8a9a7a5f726a870371d88b38a5  DETAILS-RU.md
+6c7800c6229dc6b696d8d37a7b4a4050dc427d84f90e16b796711197bfe184cf  README-RU.md
+dbef3bfb34742e8ed95d9d20547f139c473f3332e7ac84e9eec14a5bc30d6b2f  golphi-ui.test.exe
+c901234c7d2efe1d7565a8f4b91f4040e57fc2794dc95a0712a261124e5afa2f  golphi-win32.test.exe
+e03df2e0cbce176a9893706bb6f9ab4a8ffa53b98f06004d5392b8b13e305989  scripts/verify-dynamic-tree-native-windows.ps1
+ZIP SHA256=b974a831fed040c1602a7d54b13cc76095a9f554f4285780d96c9a9bbe18a549
