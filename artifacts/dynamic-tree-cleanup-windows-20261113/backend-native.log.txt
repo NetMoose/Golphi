@@ -1,0 +1,4 @@
+=== RUN   TestNativeDynamicTreeWin32
+--- PASS: TestNativeDynamicTreeWin32 (0.05s)
+PASS
+EXIT_CODE=0
