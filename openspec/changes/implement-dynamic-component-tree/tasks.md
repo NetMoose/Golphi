@@ -48,7 +48,7 @@
 - [ ] 5.4 Итоговый review всей ветки, go test/vet, race применимых UI/queue tests, native обеих ОС, openspec validate implement-dynamic-component-tree --strict, openspec validate --specs --strict, git diff --check. Проверить сохранение сценариев MODIFIED-блоков и приоритетов guards; commit/push с чистым checkout и совпадением remote HEAD.
 - [ ] 5.5 Создать PR в develop с фактическим покрытием, breaking API и ограничениями; проверить base/head/URL и приложить PR к чату. Не считать отсутствующее native-свидетельство выполненной задачей.
 
-Статус 5.1: общий пример examples/dynamic-tree и инструкция docs/dynamic-tree-example.md подготовлены, обе сборки проходят. Ручные сценарии обеих ОС ожидаются; checkbox остаётся открытым.
+Статус 5.1: общий пример examples/dynamic-tree и инструкция docs/dynamic-tree-example.md подготовлены, обе сборки проходят. Ручной отзыв 13 ноября выявил отказ Windows при выделении до конца строки; подготовлено узкое исправление обратного выделения, повтор ожидается. Полная приёмка обеих ОС не получена; checkbox остаётся открытым.
 
 ## Workflow follow-up
 

@@ -92,3 +92,42 @@ func TestSingleLineDirectionObservedWindowsRegression(t *testing.T) {
 		})
 	}
 }
+
+func TestSingleLineDirectionMissingEndObservedWindowsRegression(t *testing.T) {
+	for _, x := range []int32{181, 208} {
+		// User input selected [25,31] / [29,36], invalidating the old
+		// collapsed cache. EM_POSFROMCHAR(high) returned 0xffffffff.
+		caret := caretObservation{X: x, Y: 2, Valid: true}
+		low := caretObservation{X: x, Y: 0, Valid: true}
+		reverse, err := singleLineSelectionDirection(caret, low, caretObservation{}, caretObservation{}, false)
+		if err != nil || !reverse {
+			t.Errorf("observed x=%d: reverse=%t err=%v", x, reverse, err)
+		}
+		// Endpoint readback wins over an old forward label; it does not
+		// manufacture a new explicit-set observation for later snapshots.
+		reverse, err = singleLineSelectionDirection(caret, low, caretObservation{}, caret, false)
+		if err != nil || !reverse {
+			t.Errorf("observed x=%d with contradictory cache: reverse=%t err=%v", x, reverse, err)
+		}
+	}
+}
+
+func TestSingleLineDirectionMissingEndRejectsInsufficientEvidence(t *testing.T) {
+	low := caretObservation{X: 181, Valid: true}
+	for _, tc := range []struct {
+		name             string
+		caret, low, high caretObservation
+	}{
+		{"forward end cannot be inferred from nonmatch", caretObservation{X: 210, Y: 2, Valid: true}, low, caretObservation{}},
+		{"missing caret", caretObservation{}, low, caretObservation{}},
+		{"both ends missing", caretObservation{X: 181, Y: 2, Valid: true}, caretObservation{}, caretObservation{}},
+		{"known equal X remains ambiguous", caretObservation{X: 181, Y: 2, Valid: true}, low, caretObservation{X: 181, Y: 4, Valid: true}},
+		{"missing low is not the observed text end case", caretObservation{X: 181, Y: 2, Valid: true}, caretObservation{}, low},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := singleLineSelectionDirection(tc.caret, tc.low, tc.high, caretObservation{}, false); err == nil {
+				t.Fatal("accepted insufficient endpoint evidence")
+			}
+		})
+	}
+}

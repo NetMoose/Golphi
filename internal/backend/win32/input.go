@@ -72,6 +72,14 @@ func singleLineSelectionDirection(caret, low, high, cache caretObservation, cach
 	low.Y = 0
 	high.Y = 0
 	cache.Y = 0
+	// In the supported single-line layout, a reverse selection can still
+	// identify its active low endpoint when EM_POSFROMCHAR cannot observe
+	// the high endpoint at text end. Do not infer forward from a nonmatch:
+	// that would assert a caret position we have never observed. This does
+	// not extend support to bidi or coincident zero-width endpoint layouts.
+	if caret.Valid && low.Valid && !high.Valid && caret == low {
+		return true, nil
+	}
 	reverse, err := selectionDirection(caret, low, high, cache, cachedReverse)
 	if err != nil {
 		return false, fmt.Errorf("single-line rawCaret=%+v rawLow=%+v rawHigh=%+v rawCache=%+v: %w", rawCaret, rawLow, rawHigh, rawCache, err)
