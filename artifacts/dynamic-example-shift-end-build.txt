@@ -1,0 +1,3 @@
+Base7f10bf1 plus observed ShiftEnd transition fix. CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-H windowsgui" ./examples/dynamic-tree. New Windows native result pending.
+ba6e966f8413e8b5b013870c735fb3d3df13c327554e959d6566993548b6d180  dynamic-tree.exe
+47eb2ca854ee7bb9a794ad0297a6101e5cd23cd165737d13435ea486e176fad9  README-RU.md

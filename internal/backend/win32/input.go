@@ -37,8 +37,9 @@ func utf16ToScalar(s string, offset int) (int, error) {
 	return 0, fmt.Errorf("win32: UTF-16 offset %d is not a scalar boundary", offset)
 }
 
-// A valid cache observation comes only from an explicit EM_SETSEL followed by
-// native caret readback, and is invalidated before subsequent input mutation.
+// A valid cache observation comes from an explicit selection transition
+// (EM_SETSEL or Shift+End) followed by native caret readback. Subsequent
+// snapshots must match both its ordered range and caret position.
 type caretObservation struct {
 	X, Y  int32
 	Valid bool
@@ -85,4 +86,23 @@ func singleLineSelectionDirection(caret, low, high, cache caretObservation, cach
 		return false, fmt.Errorf("single-line rawCaret=%+v rawLow=%+v rawHigh=%+v rawCache=%+v: %w", rawCaret, rawLow, rawHigh, rawCache, err)
 	}
 	return reverse, nil
+}
+
+func shiftEndObservation(anchor, beforeCaret uint32, known bool, lo, hi, length uint32, caret caretObservation) caretObservation {
+	if known && anchor < length && beforeCaret != length && lo == anchor && hi == length && caret.Valid {
+		return caret
+	}
+	return caretObservation{}
+}
+
+func invalidatesSelectionObservation(msg uint32, w uintptr) bool {
+	switch msg {
+	case 0x100, 0x104: // key/system-key down: modifiers and function keys do not edit.
+		return !(w >= 0x70 && w <= 0x87 || w >= 0x10 && w <= 0x12)
+	case 0x200: // WM_MOUSEMOVE: only dragging can change the selection.
+		return w&1 != 0
+	case 0xc, 0xc2, 0xb1, 0x102, 0x106, 0x201, 0x202, 0x203, 0x300, 0x302, 0x303, 0x304, 0xc7:
+		return true
+	}
+	return false
 }

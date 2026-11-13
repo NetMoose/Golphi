@@ -49,6 +49,7 @@ type peer struct {
 	selectionAnchor, selectionCaret uint32
 	selectionKnown                  bool
 	selectionObservation            caretObservation
+	selectionRevision               uint64
 }
 type driver struct {
 	fenced          bool
@@ -106,7 +107,7 @@ func (d *driver) Init(cb backend.Callbacks) error {
 		name    string
 		symbols []string
 	}{
-		{"user32.dll", []string{"RegisterClassExW", "UnregisterClassW", "CreateWindowExW", "DestroyWindow", "DefWindowProcW", "PeekMessageW", "MsgWaitForMultipleObjectsEx", "TranslateMessage", "DispatchMessageW", "ShowWindow", "SetWindowTextW", "GetWindowTextLengthW", "GetWindowTextW", "AdjustWindowRectExForDpi", "GetDpiForSystem", "SetThreadDpiAwarenessContext", "LoadCursorW", "SetParent", "GetParent", "SetWindowPos", "GetFocus", "SetFocus", "SendMessageW", "GetCaretPos", "SetWindowLongPtrW", "CallWindowProcW", "IsWindow"}},
+		{"user32.dll", []string{"RegisterClassExW", "UnregisterClassW", "CreateWindowExW", "DestroyWindow", "DefWindowProcW", "PeekMessageW", "MsgWaitForMultipleObjectsEx", "TranslateMessage", "DispatchMessageW", "ShowWindow", "SetWindowTextW", "GetWindowTextLengthW", "GetWindowTextW", "AdjustWindowRectExForDpi", "GetDpiForSystem", "SetThreadDpiAwarenessContext", "LoadCursorW", "SetParent", "GetParent", "SetWindowPos", "GetFocus", "SetFocus", "SendMessageW", "GetCaretPos", "GetKeyState", "SetWindowLongPtrW", "CallWindowProcW", "IsWindow"}},
 		{"kernel32.dll", []string{"GetModuleHandleW", "SetLastError", "CreateEventW", "SetEvent", "ResetEvent", "CloseHandle", "WaitForSingleObject"}}} {
 		dll, err := syscall.LoadDLL(lib.name)
 		if err != nil {

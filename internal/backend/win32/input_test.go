@@ -131,3 +131,66 @@ func TestSingleLineDirectionMissingEndRejectsInsufficientEvidence(t *testing.T) 
 		})
 	}
 }
+
+func TestShiftEndNativeTransition(t *testing.T) {
+	caret := caretObservation{X: 223, Y: 2, Valid: true}
+	for _, tc := range []struct {
+		name                                string
+		anchor, beforeCaret, lo, hi, length uint32
+		known                               bool
+		observed                            caretObservation
+		want                                bool
+	}{
+		{"observed collapsed to end", 16, 16, 16, 31, 31, true, caret, true},
+		{"reverse to forward end", 16, 10, 16, 31, 31, true, caret, true},
+		{"unknown prior direction", 16, 16, 16, 31, 31, false, caret, false},
+		{"wrong anchor", 16, 16, 15, 31, 31, true, caret, false},
+		{"not text end", 16, 16, 16, 30, 31, true, caret, false},
+		{"collapsed at end", 31, 16, 31, 31, 31, true, caret, false},
+		{"same range reverse is not a range transition", 31, 16, 16, 31, 31, true, caret, false},
+		{"missing caret", 16, 16, 16, 31, 31, true, caretObservation{}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cache := shiftEndObservation(tc.anchor, tc.beforeCaret, tc.known, tc.lo, tc.hi, tc.length, tc.observed)
+			if cache.Valid != tc.want {
+				t.Fatalf("cache=%+v want valid=%t", cache, tc.want)
+			}
+			if tc.want {
+				reverse, err := singleLineSelectionDirection(caret, caretObservation{X: 123, Valid: true}, caretObservation{}, cache, false)
+				if err != nil || reverse {
+					t.Fatalf("Shift+End snapshot: reverse=%t err=%v", reverse, err)
+				}
+			}
+		})
+	}
+}
+
+func TestSelectionObservationLifetime(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		msg        uint32
+		w          uintptr
+		invalidate bool
+	}{
+		{"End keyup", 0x101, 0x23, false},
+		{"Shift keyup", 0x101, 0x10, false},
+		{"hover", 0x200, 0, false},
+		{"drag", 0x200, 1, true},
+		{"navigation", 0x100, 0x25, true},
+		{"selection", 0xb1, 0, true},
+		{"text", 0xc, 0, true},
+		{"replace", 0xc2, 0, true},
+		{"paste", 0x302, 0, true},
+		{"cut", 0x300, 0, true},
+		{"undo", 0x304, 0, true},
+		{"focus rechecks native range and caret", 7, 0, false},
+		{"move hotkey", 0x100, 0x77, false},
+		{"shift down", 0x100, 0x10, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := invalidatesSelectionObservation(tc.msg, tc.w); got != tc.invalidate {
+				t.Fatalf("invalidate=%t want %t", got, tc.invalidate)
+			}
+		})
+	}
+}

@@ -42,16 +42,50 @@ func editProc(hwnd uintptr, msg uint32, w, l uintptr) (result uintptr) {
 		if msg == 0xb1 {
 			previousLow, previousHigh = d.selection(hwnd)
 		}
-		// A prior caret observation cannot establish direction after user input,
-		// text replacement, focus acquisition, or programmatic selection changes.
-		if msg == 0xc || msg == 0xc2 || msg == 0xb1 || msg == 0x7 || msg == 0x100 || msg == 0x101 || msg == 0x102 || msg == 0x200 || msg == 0x201 || msg == 0x202 || msg == 0x203 {
+		// Capture the actual pre-key anchor, including a collapsed native range.
+		shiftEnd := false
+		if msg == 0x100 && w == 0x23 {
+			shift, _, _ := d.api["GetKeyState"].Call(0x10)
+			focus, _, _ := d.api["GetFocus"].Call()
+			shiftEnd = shift&0x8000 != 0 && focus == hwnd && d.rememberSelection(id, true) == nil
+			p = d.peers[id]
+		}
+		before := p
+		if invalidatesSelectionObservation(msg, w) {
 			p.selectionObservation = caretObservation{}
+			p.selectionKnown = false
+			p.selectionRevision++
 			d.peers[id] = p
 		}
+		revision := p.selectionRevision
+
 		if msg == 0x8 { // WM_KILLFOCUS: caret still belongs to this edit before default handling.
 			_ = d.rememberSelection(id, true)
 		}
 		result, _, _ = d.api["CallWindowProcW"].Call(p.oldProc, hwnd, uintptr(msg), w, l)
+		if shiftEnd {
+			p = d.peers[id]
+			focus, _, _ := d.api["GetFocus"].Call()
+			lo, hi := d.selection(hwnd)
+			length, _, _ := d.api["GetWindowTextLengthW"].Call(hwnd)
+			var cp point
+			ok, _, _ := d.api["GetCaretPos"].Call(uintptr(unsafe.Pointer(&cp)))
+			if focus == hwnd && p.selectionRevision == revision {
+				observed := caretObservation{X: cp.x, Y: cp.y, Valid: ok != 0}
+				cache := shiftEndObservation(before.selectionAnchor, before.selectionCaret, before.selectionKnown, lo, hi, uint32(length), observed)
+				// Repeated End at the same endpoint may retain an already certified
+				// observation, but cannot create one from an unchanged range.
+				if before.selectionKnown && before.selectionAnchor == lo && before.selectionCaret == hi && hi == uint32(length) && observed.Valid && observed == before.selectionObservation {
+					cache = observed
+				}
+				if cache.Valid {
+					p.selectionAnchor, p.selectionCaret = lo, hi
+					p.selectionKnown = true
+					p.selectionObservation = cache
+					d.peers[id] = p
+				}
+			}
+		}
 		if msg == 0xb1 { // EM_SETSEL: unchanged ordered range may leave active end unchanged.
 			lo, hi := d.selection(hwnd)
 			p = d.peers[id]
