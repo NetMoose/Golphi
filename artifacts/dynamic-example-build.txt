@@ -1,0 +1,4 @@
+Task5.1 example checkpoint after c9e6adc; manual Linux/Windows pending. CGO_ENABLED=0; go build ./examples/dynamic-tree. Windows GOOS=windows GOARCH=amd64 -ldflags="-H windowsgui"; PE subsystem2 verified.
+aead836bd4156fb3228e765d82e242ff214e205e4c661eb947311c1463cbdc75  dynamic-tree.exe
+fbc8fae7c03b1ae5f96d148703c94217873253a9ff99830fa7f6f66029f53e1a  dynamic-tree-linux
+8dbbd8656e273a51ad4e9c243dbf67d769ee2304ac3ebe28773c93da541c5aeb  README-RU.md
