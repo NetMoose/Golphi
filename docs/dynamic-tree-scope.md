@@ -1,14 +1,13 @@
 # Область реализации динамического дерева
 
-Этот документ описывает реализацию активного изменения
-[implement-dynamic-component-tree](../openspec/changes/implement-dynamic-component-tree/proposal.md).
-Действующие основные OpenSpec остаются ранее принятым базовым контрактом
+Динамическое дерево реализовано в [PR #11](https://github.com/NetMoose/Golphi/pull/11), слитом в `develop`.
+Текущие правила входят в Scope и Requirements основных спецификаций OpenSpec
 [lifecycle](../openspec/specs/component-lifecycle/spec.md),
 [events](../openspec/specs/component-events/spec.md),
 [failure](../openspec/specs/application-failure/spec.md),
 [runtime](../openspec/specs/native-ui-runtime/spec.md) и
-[Post](../openspec/specs/post-dispatch/spec.md). Перенос дельт в основные Scope
-и Requirements выполняется отдельной синхронизацией.
+[Post](../openspec/specs/post-dispatch/spec.md). Исходные дельты сохранены
+в [архиве изменения](../openspec/changes/archive/2026-11-20-implement-dynamic-component-tree/proposal.md).
 
 - Экспериментальный API меняет сигнатуры несовместимо. Owner имеет роль
   `Component`, Parent — `Container`. У обычного компонента Owner обязателен
@@ -36,12 +35,12 @@
 
 ## Требования и проверки
 
-Названия в таблицах совпадают с заголовками дельт. «Ядро» обозначает проверки
+В таблицах перечислены требования изменения из основных спецификаций. «Ядро» обозначает проверки
 логики, в том числе сценарии Run с fake Driver. «Инъекция» обозначает заданный
 тестом сбой. Нативные тесты используют настоящий адаптер и графическую сессию.
 Даты и степень подтверждения приведены в разделе [Свидетельства](#свидетельства).
 
-### [Component lifecycle](../openspec/changes/implement-dynamic-component-tree/specs/component-lifecycle/spec.md)
+### [Component lifecycle](../openspec/specs/component-lifecycle/spec.md)
 
 | Требование | Покрытие |
 | --- | --- |
@@ -60,7 +59,7 @@
 | Detach preserves text without restoring focus | `TestTreeInputState` проверяет неизменный и подготовленный текст на новом peer, тишину и сохранение внешнего фокуса. Нативные тесты адаптеров проверяют текст и фокус, core/native — тишину; шаги 5–6 примера проверяют поведение на обеих ОС. [Ядро](../ui/tree_input_test.go), [GTK](#gtk), [Win32](#win32), [core/native](#core-native), [пример](dynamic-tree-example.md#ручной-сценарий-на-каждой-ос). |
 | Detached text edit resets selection | `TestTreeInputState/changed`, `/changed-back` и `/empty` проверяют логический сброс, `/same` — сохранение снимка. После reattach проверяются текст, тишина и внешний фокус. Позиции нового peer не входят в критерий. [Ядро](../ui/tree_input_test.go). |
 
-### [Component events](../openspec/changes/implement-dynamic-component-tree/specs/component-events/spec.md)
+### [Component events](../openspec/specs/component-events/spec.md)
 
 | Требование | Покрытие |
 | --- | --- |
@@ -70,7 +69,7 @@
 | Direct attached transfer preserves notification state | `TestTreeAttachmentTransitions` и core/native сохраняют pending, базу и поколение двух потомков, доставляют повтор после переноса и подавляют технические сигналы. Обычная поздняя ошибка переноса покрыта инъекцией в ядре. [Ядро](../ui/tree_run_test.go), [core/native](#core-native). |
 | Transfer to detached container counts as detachment | `TestTreeAttachmentTransitions` использует неприсоединённую Panel как ненулевой Parent и проверяет отмену у потомков, тишину и сохранение внутреннего дерева. Сохранение pending при обычном отказе проверено на прямом переносе. `TestTreeFailedMoveToDetachedPanelPreservesPendingChange` изолированно проверяет этот отказ с pending, восстановление и последующую доставку; [тест](../ui/tree_pending_failure_test.go). [Ядро](../ui/tree_run_test.go). |
 
-### [Application failure](../openspec/changes/implement-dynamic-component-tree/specs/application-failure/spec.md), [native UI runtime](../openspec/changes/implement-dynamic-component-tree/specs/native-ui-runtime/spec.md) и [Post dispatch](../openspec/changes/implement-dynamic-component-tree/specs/post-dispatch/spec.md)
+### [Application failure](../openspec/specs/application-failure/spec.md), [native UI runtime](../openspec/specs/native-ui-runtime/spec.md) и [Post dispatch](../openspec/specs/post-dispatch/spec.md)
 
 | Требование | Покрытие |
 | --- | --- |
@@ -150,7 +149,7 @@ peer проверяется отдельно тестами адаптеров. 
 ## Открытые вопросы
 
 Сохранение позиций и направления выделения после пересоздания Edit перенесено
-на следующий этап. В силе весь перечень [Open Questions](../openspec/changes/implement-dynamic-component-tree/design.md#open-questions),
+на следующий этап. В силе весь перечень [Open Questions](../openspec/changes/archive/2026-11-20-implement-dynamic-component-tree/design.md#open-questions),
 включая несколько окон и межформенные переносы, Owner, layout и изменение DPI,
 публичные Application и API ввода, правила Post за пределами принятого
 контракта, диагностику, зависимую очистку, retry и сочетания после фатального

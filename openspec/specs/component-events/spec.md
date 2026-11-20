@@ -10,7 +10,7 @@
 
 Правила отложенной повторной доставки определены требованиями «Deferred and coalesced repeated changes», «Destruction cancels unstarted component notifications», «Detachment cancels pending text notifications», «Pending text notification follows the current handler», «Disabling cancels queued and accumulated text notifications» и «Comparison restarts after disabling» ниже; паника обработчика и аварийная остановка определены [спецификацией application-failure](../application-failure/spec.md). Принятие, выполнение и отмена обычных задач Post описаны [спецификацией post-dispatch](../post-dispatch/spec.md).
 
-Для узкого MVP сигнатуры button.SetOnClick(func()) / edit.SetOnChange(func()) и отмена уведомлений при обычном закрытии определены требованиями ниже. Сигнатуры других событий и Program/User, обычная остановка полной библиотеки вне MVP, порядок относительно Post/native events, взаимные изменения компонентов, новое накопление после отсоединения/присоединения внутри одного callback и прочие неописанные сочетания остаются открытыми.
+Для узкого MVP сигнатуры button.SetOnClick(func()) / edit.SetOnChange(func()) и отмена уведомлений при обычном закрытии определены требованиями ниже. Сигнатуры других событий и Program/User, обычная остановка полной библиотеки вне MVP, порядок относительно Post/native events, взаимные изменения компонентов и прочие неописанные сочетания остаются открытыми. Новое накопление после reattach внутри текущего callback определяется требованием Reattachment starts a fresh comparison period; прямой перенос сохраняет pending/base, пересоздание peer само по себе не является отсоединением.
 
 ## Requirements
 
@@ -86,14 +86,14 @@
 - **THEN** все не начатые уведомления каждого уничтоженного ребёнка отменены
 
 ### Requirement: Detachment cancels pending text notifications
-Успешное отсоединение компонента или его предка SHALL отменять ожидающие OnChange всего отсоединённого поддерева без восстановления при присоединении. Ошибка SetParent MUST сохранять уведомления вместе с прежним состоянием.
+Успешное отсоединение компонента или его предка SHALL отменять ожидающие OnChange и накопленные изменения внутри текущего обработчика всего отсоединённого поддерева без восстановления при присоединении. Обычная ошибка SetParent MUST сохранять уведомления вместе с прежним состоянием; аварийный отказ восстановления подчиняется application-failure.
 
 #### Scenario: Detach and reattach with a pending child notification
 - **WHEN** у поля ожидается OnChange, его панель успешно отсоединяют и затем присоединяют снова
 - **THEN** прежнее уведомление поля отменено и не воспроизводится
 
 #### Scenario: Failed detachment preserves pending notification
-- **WHEN** попытка SetParent(nil) завершается ошибкой при ожидающем OnChange
+- **WHEN** попытка SetParent(nil) завершается обычной ошибкой при ожидающем OnChange
 - **THEN** уведомление сохраняется и, при отсутствии последующей отмены, доставляется по обычным правилам
 
 ### Requirement: Pending text notification follows the current handler
@@ -146,3 +146,47 @@ MVP SHALL предоставлять button.SetOnClick(func()) и edit.SetOnChan
 #### Scenario: Close with queued text change
 - **WHEN** запрос закрытия обработан при ожидающем повторном OnChange
 - **THEN** уведомление отменяется и не доставляется при очистке
+
+### Requirement: Attachment delivers no preparation events
+Создание native-поддерева, применение подготовленных свойств и присоединение SHALL проходить без прикладных уведомлений. Прикладные обработчики MUST NOT запускаться внутри незавершённого SetParent. После успешного возврата последующие реальные изменения SHALL доставляться по прежнему контракту.
+
+#### Scenario: Prepared text stays silent
+- **WHEN** поле подготовлено с текстом А и присоединено
+- **THEN** SetParent не вызывает OnChange; последующий SetText(Б) создаёт обычное уведомление
+
+#### Scenario: Failed attachment stays silent
+- **WHEN** попытка материализации поддерева заканчивается ошибкой
+- **THEN** технические сигналы создания и отката не становятся прикладными событиями
+
+### Requirement: Reattachment starts a fresh comparison period
+После перехода из отсоединённого в присоединённое состояние база сравнения OnChange SHALL стать текущим текстом. Отменённое уведомление MUST NOT восстанавливаться. Новые реальные изменения SHALL создавать уведомления относительно новой базы; внутри текущего обработчика доставка остаётся отложенной и объединённой. Правило SHALL действовать и при переходе через предка.
+
+#### Scenario: Reattach and return to old entry
+- **WHEN** обработчик вошёл с А, отсоединил поле, тихо установил Б, присоединил и установил А
+- **THEN** после завершения текущего обработчика приходит один OnChange с А: новая база была Б
+
+#### Scenario: Reattach without further change
+- **WHEN** после отсоединения и тихой подготовки поле присоединяют без дальнейшего изменения текста
+- **THEN** нет OnChange от отменённого накопления или самого присоединения
+
+#### Scenario: Ancestor reattachment
+- **WHEN** панель с полем проходит отсоединение и присоединение внутри callback
+- **THEN** база каждого поля устанавливается по текущему тексту; последующие изменения сравниваются с новой базой
+
+### Requirement: Direct attached transfer preserves notification state
+Успешный прямой перенос между присоединёнными контейнерами одной формы SHALL сохранять ожидающие уведомления и базу сравнения; native-пересоздание MUST NOT считаться логическим отсоединением. Сам перенос SHALL быть тихим. При обычной ошибке состояние уведомлений сохраняется.
+
+#### Scenario: Pending change survives a direct move
+- **WHEN** поле с ожидающим OnChange прямо переносится в другую присоединённую панель
+- **THEN** ожидающее уведомление и прежняя база сохранены, технических событий переноса нет
+
+### Requirement: Transfer to detached container counts as detachment
+Успешный перенос в контейнер без цепочки Parent до формы SHALL иметь семантику отсоединения всего переносимого поддерева. Оно исчезает из интерфейса; ожидающие OnChange и накопленные изменения отменяются, подготовка становится тихой. Owner, настройки, обработчики и внутренние связи сохраняются.
+
+#### Scenario: Move into detached panel
+- **WHEN** отображаемое поддерево с накопленным OnChange переносят в неприсоединённую панель
+- **THEN** доставка отменена без восстановления; при будущем присоединении применяется новая база
+
+#### Scenario: Failed move into detached panel
+- **WHEN** такой перенос заканчивается обычной ошибкой
+- **THEN** прежнее размещение и ожидающие уведомления сохраняются

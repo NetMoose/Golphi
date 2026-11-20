@@ -2,7 +2,7 @@
 
 Ниже сохранены исходные трассировки E0 и вопросы в их исторической формулировке.
 Текущая точка входа MVP — пакетная функция `ui.Post(fn) error`.
-[Текущая дельта Post](../../openspec/changes/implement-dynamic-component-tree/specs/post-dispatch/spec.md) сохраняет FIFO и
+[Основная спецификация Post](../../openspec/specs/post-dispatch/spec.md) сохраняет FIFO и
 отмену ещё не начатых задач при аварийном откате SetParent. Обычный отказ
 сохраняет приём задач. Вложенная диспетчеризация в незавершённом SetParent
 не запускает прикладной код. Реализация описана в [документации API](../components-mvp.md)
