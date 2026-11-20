@@ -1,5 +1,14 @@
 # Контракт событий компонентов Golphi
 
+Ниже сохранены исходные трассировки E0 и вопросы в их исторической формулировке.
+[Текущая дельта событий](../../openspec/changes/implement-dynamic-component-tree/specs/component-events/spec.md) расширяет
+их на динамическое поддерево. Прямой перенос сохраняет pending и базу
+сравнения, как и обычный отказ. Потеря присоединённости через любого предка
+отменяет старое поколение уведомлений. Новое присоединение начинает сравнение
+с фактического текста, в том числе внутри текущего OnChange. Аварийный
+откат прекращает доставку во всём приложении. Реализация и тесты описаны
+в [документе о runtime](../dynamic-tree-runtime.md).
+
 Документ фиксирует согласованную часть контракта E0 из [спецификации событий](../../openspec/changes/archive/2026-10-27-define-component-contract/specs/component-events/spec.md) и [дизайна изменения](../../openspec/changes/archive/2026-10-27-define-component-contract/design.md). Это описание целевого поведения, а не заявление о готовом runtime или проверенных backend. Новые правила отмены, текущего адресата и сброса сравнения определены [дельтой событий](../../openspec/changes/archive/2026-10-27-define-destruction-and-event-failure-contract/specs/component-events/spec.md) и [дизайном изменения](../../openspec/changes/archive/2026-10-27-define-destruction-and-event-failure-contract/design.md). Полный публичный API ещё не утверждён.
 
 ## Условия доставки
