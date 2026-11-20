@@ -2,7 +2,7 @@
 
 Дата checkpoint: 20 ноября 2026 года. Проверена вся ветка от `82605a8` до
 `f2c29f0`, затем исправления замечаний этого review. Нативная приёмка новой
-Windows-сборки пока ожидается, поэтому 5.4 остаётся открытой.
+Windows-сборки подтверждена журналами 20 ноября, задача 5.4 выполнена.
 
 ## Review и исправления
 
@@ -66,7 +66,7 @@ Race-проверка использует CGO_ENABLED=1 только для rac
 подтверждение Shift+End относятся к своим сборкам. Они не заменяют запуск
 изменённого core/native теста после новых исправлений.
 
-## Оставшийся Windows-прогон
+## Windows-прогон итоговой сборки
 
 Пакет: `artifacts/golphi-dynamic-tree-final-review-windows.zip`.
 [Команды и SHA256 сборки](../artifacts/dynamic-tree-final-review-build.txt).
@@ -79,9 +79,30 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-dynamic-tre
 Четыре автоматические проверки без SKIP: cleanup, широкий backend, retained HWND,
 core/native с тремя подслучаями. Передать всю папку `artifacts/final-review-windows`.
 Не добавлять -Manual: прежние ручные сценарии повторять не требуется. Скрипт и
-README в UTF-8 с BOM; содержимое ZIP и хеши проверены. Новых Windows-результатов
-на момент checkpoint нет. 5.4 будет отмечена после фактического прогона.
+README в UTF-8 с BOM; содержимое ZIP и хеши проверены. На исходном checkpoint результат ещё ожидался; ниже записано его получение.
 
 Основные specs, активный design/Open Questions и исторические архивы не
 синхронизировались. Новых решений по остальным открытым вопросам нет.
 PR остаётся отдельной задачей 5.5.
+
+## Полученные результаты Windows — 2026-11-20
+
+[Окружение](../artifacts/dynamic-tree-final-windows-20261120/environment.txt):
+Windows 11 amd64 build 26100, 64-bit process. SHA256 backend и UI совпадают
+с manifest итоговой сборки, связанной с исправлениями `538f8f1`. DPI/масштаб
+в этом автоматическом отчёте отдельно не записан; прежние ручные измерения
+не объявляются измерениями этого запуска.
+
+| Проверка | Результат |
+|---|---|
+| [Aborted cleanup](../artifacts/dynamic-tree-final-windows-20261120/backend-aborted-cleanup.log.txt) | PASS, все 3 подслучая, exit 0 |
+| [Широкий backend](../artifacts/dynamic-tree-final-windows-20261120/backend-native.log.txt) | PASS, exit 0 |
+| [Retained HWND](../artifacts/dynamic-tree-final-windows-20261120/backend-retained.log.txt) | PASS, exit 0 |
+| [Core/native/UI](../artifacts/dynamic-tree-final-windows-20261120/ui-native.log.txt) | PASS, все 3 подслучая, exit 0; OnChange=4/2, nativeChanges=8, coreReleased=8 |
+
+Пройдены `native-pending-child-move` и `native-pending-child-detach`, включая
+отложенный release внутри native callback. SKIP/FAIL отсутствуют. Совместно
+с Linux-проверками и повторным review это закрывает последнее условие 5.4.
+Журналы скопированы отдельно в UTF-8/LF с удалением конечных пробелов; исходники
+пользователя и предыдущие свидетельства сохранены. Новые ручные сценарии не
+проводились. Задача 5.5 (PR) и остальные открытые вопросы остаются открытыми.

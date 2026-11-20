@@ -162,10 +162,10 @@ peer проверяется отдельно тестами адаптеров. 
 `TestMovedPeerRelease` и `TestPendingChildRelease` проверяют native-каскад через
 fake, включая ребёнка, логически уничтоженного перед переносом/отсоединением
 предка в том же callback. Core/native сценарий расширен тремя подслучаями;
-GTK-прогон новой версии прошёл, Windows-прогон ожидается. `TestDestroyWorkerGuard`
+GTK-прогон новой версии и [Windows-прогон 20 ноября](../artifacts/dynamic-tree-final-windows-20261120/ui-native.log.txt) прошли. `TestDestroyWorkerGuard`
 проверяет отказ worker setters при одновременном UI Destroy под race detector;
 атомарный destroyed latch не расширяет потоковый контракт остальных API.
 `TestTransientLifetime` проверяет ограниченность runtime-реестров при повторном
 создании/уничтожении, включая never-attached детей. [Регрессии](../ui/tree_lifetime_test.go).
 
-Результаты и оставшееся условие приёмки — в [отчёте 5.4](dynamic-tree-final-review.md).
+Результаты завершённой приёмки 5.4 — в [отчёте 5.4](dynamic-tree-final-review.md).
