@@ -1,0 +1,4 @@
+Scoped retained HWND transaction candidate. Windows native execution pending.
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go test -c -buildvcs=false (backend and ui)
+7e642199f0d8a267608a369b42db03cdeebbabdab1c3aa100475b775f2b68288  golphi-win32.test.exe
+c3828ec925c7b3caa5d230437d8e4b7d536e8c207981770f04014d81461b73ef  golphi-ui.test.exe

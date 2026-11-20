@@ -1,0 +1,10 @@
+=== RUN   TestNativeAbortedTreeCleanupWin32
+=== RUN   TestNativeAbortedTreeCleanupWin32/late-child
+=== RUN   TestNativeAbortedTreeCleanupWin32/late-child-in-callback
+=== RUN   TestNativeAbortedTreeCleanupWin32/shown-root-in-callback
+--- PASS: TestNativeAbortedTreeCleanupWin32 (0.06s)
+    --- PASS: TestNativeAbortedTreeCleanupWin32/late-child (0.03s)
+    --- PASS: TestNativeAbortedTreeCleanupWin32/late-child-in-callback (0.02s)
+    --- PASS: TestNativeAbortedTreeCleanupWin32/shown-root-in-callback (0.01s)
+PASS
+EXIT_CODE=0

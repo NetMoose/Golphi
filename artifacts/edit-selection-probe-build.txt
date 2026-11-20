@@ -1,0 +1,3 @@
+Diagnostic only: not native acceptance.
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go test -c -buildvcs=false ./internal/backend/win32
+5b940ed73bd21601ca22e3d99d947f882d383906cf076d9039f0b0daba8d8eae  golphi-win32.test.exe

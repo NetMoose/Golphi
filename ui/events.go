@@ -1,5 +1,10 @@
 package ui
 
+import (
+	"github.com/NetMoose/Golphi/internal/backend"
+	"unicode/utf8"
+)
+
 // eventRuntime is implemented by the Run controller. enqueueEvent must schedule
 // a later safe loop turn, never call inline. eventsRunning becomes false before
 // stop/failure cleanup. syncText writes native text and returns the effective
@@ -34,8 +39,8 @@ func (e *Edit) SetOnChange(handler func()) {
 }
 
 func (c *component) eventsEnabled() bool {
-	return !c.destroyed && c.runtime != nil && c.runtime.eventsRunning() &&
-		(c.form != nil || (c.parent != nil && !c.parent.destroyed))
+	return !c.Destroyed() && c.runtime != nil && c.runtime.eventsRunning() &&
+		c.attached()
 }
 func (c *component) setText(text string) {
 	old := c.text
@@ -48,13 +53,17 @@ func (c *component) setText(text string) {
 		c.writing = true
 		func() { defer func() { c.writing = false }(); text = c.runtime.syncText(c, text) }()
 	}
+	if c.kind == backend.Edit && (c.runtime == nil || !c.attached()) && old != text {
+		end := utf8.RuneCountInString(text)
+		c.savedInput = &backend.InputState{Text: text, Anchor: end, Caret: end}
+	}
 	c.applyText(old, text)
 }
 
 // nativeText accepts copied native input on the UI thread. Runtime routes Change
 // by peer and must suppress callbacks before readiness and after stop/failure.
 func (c *component) nativeText(text string) {
-	if c.destroyed || c.writing {
+	if c.Destroyed() || c.writing {
 		return
 	}
 	c.applyText(c.text, text)

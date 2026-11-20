@@ -1,0 +1,452 @@
+# Проверка динамического дерева компонентов
+
+Изменение: [implement-dynamic-component-tree](../openspec/changes/implement-dynamic-component-tree/proposal.md). Реализация начата; результаты этого отчёта не означают завершения изменения.
+
+## Итоговые проверки 5.4 — 2026-11-20
+
+Review всей ветки выявило и устранило ошибки порядка release, гонку destroyed guard
+и удержание уничтоженных компонентов. Регрессии и свежие Linux/native/race/vet
+проверки прошли. [Отчёт 5.4 и пакет для Windows](dynamic-tree-final-review.md).
+Задача 5.4 завершена: четыре автоматические Windows-проверки итоговой сборки
+прошли без SKIP с кодом 0, оба SHA256 совпали с manifest.
+[Журналы и окружение](../artifacts/dynamic-tree-final-windows-20261120/environment.txt).
+
+## Согласование документации 5.3 — 2026-11-20
+
+README, текущий дизайн, API/backend/event/error docs согласованы с реализацией.
+[Scope и матрица свидетельств](dynamic-tree-scope.md) охватывают все 23 требования
+пяти дельт, ссылаются на 32 существующих теста и разделяют unit, fault injection,
+native и ручное подтверждение. Там явно отмечены невыделенные в отдельные тесты
+сценарии, ограничения платформ и происхождение хешей. Это не новый native-прогон.
+
+Реестры открытых вопросов сохранены; активный design/Open Questions,
+основные specs и исторические архивы не редактировались. Их синхронизация
+остаётся отдельным шагом. Будущие DOC-01 и WIN-01 не реализуются этой задачей.
+Проверены локальные файловые ссылки и Markdown-якоря, отсутствие trailing
+whitespace; strict validation изменения и всех пяти основных specs прошла.
+Проверки ядра и обычный Linux-набор прошли в ходе сверки; новые native-результаты
+не заявляются. Итоговая проверка всей ветки и PR остаются задачами 5.4–5.5.
+
+## Сборки этапа 5.2 — 2026-11-20
+
+Оба примера, включая прежний `examples/hello`, собраны для Linux/Windows amd64
+с CGO_ENABLED=0 и недоступными CC/CXX. GUI/console подсистемы Windows проверены.
+Команды, версии, форматы и хеши — в [отчёте сборок](dynamic-tree-builds.md).
+Новых native-прогонов эта проверка не добавляет.
+
+## Завершение этапа 4.4 — 2026-11-13
+
+Все четыре автоматические Windows-проверки исправления `3bfa412` прошли без
+SKIP, каждая с EXIT_CODE=0. [Окружение](../artifacts/dynamic-tree-cleanup-windows-20261113/environment.txt):
+Windows 11 amd64 build 26100. Полные SHA256 backend/UI совпадают с
+[manifest исправленной сборки](../artifacts/dynamic-tree-cleanup-review-build.txt).
+DPI в этом автоматическом прогоне отдельно не записан; прежние ручные
+свидетельства 96 DPI сохраняются как результаты своих запусков.
+
+| Проверка | Результат |
+|---|---|
+| [Ошибка очистки неудачной попытки](../artifacts/dynamic-tree-cleanup-windows-20261113/backend-aborted-cleanup.log.txt) | PASS: late-child, late-child-in-callback, shown-root-in-callback |
+| [Широкий backend-набор](../artifacts/dynamic-tree-cleanup-windows-20261113/backend-native.log.txt) | PASS |
+| [Сохраняемый HWND](../artifacts/dynamic-tree-cleanup-windows-20261113/backend-retained.log.txt) | PASS |
+| [Core/native/UI](../artifacts/dynamic-tree-cleanup-windows-20261113/ui-native.log.txt) | PASS; OnChange=4/2, nativeChanges=8, coreReleased=7 |
+
+Новая регрессия подтвердила диагностику ошибки очистки и продолжение работы
+после успешного отката, включая выполнение из callback и уже показанный корень.
+Ошибка DestroyWindow внедряется тестом, а не является обнаруженным системным
+сбоем. Прежние ручные clipping/внешний фокус и обратное клавиатурное выделение
+не повторялись и не объявляются результатами новой сборки.
+
+С учётом отдельного review GTK4, Win32, общего integration review, повторного
+review исправления и проверок ниже задача 4.4 завершена. Этап 4 закрыт;
+этап 5 и остальные Open Questions остаются открытыми. Журналы сохранены
+отдельно в UTF-8/LF без конечных пробелов; исходники пользователя и прежние
+свидетельства не изменены. Код после проверенной сборки не менялся.
+
+## Итоговое review этапа 4.4 — 2026-11-02
+
+Проверен нативный этап от `111139c` до `c837d7d`: отдельное review GTK4,
+отдельное Win32 и общее core/backend review. GTK4 замечаний не получил.
+Win32 и общее review независимо выявили один дефект: ресурсы неудачной
+попытки присоединения попадали в очередь успешных отложенных удалений.
+Ошибка их освобождения завершала Run после успешного отката, вместо
+сохранения работоспособного приложения и диагностики обычной ошибки.
+
+До исправления прошли полный `CGO_ENABLED=0 go test -count=1 ./...`,
+Linux/Windows `go vet ./...`, `go test -race -count=1 ./ui ./internal/backend`,
+GTK-набор из восьми тестов с `GOLPHI_GTK_NATIVE=1` и
+core→GTK→core с `GOLPHI_NATIVE_TREE=1`. GTK: 2.447s, core/native: 0.192s,
+OnChange=4/2, nativeChanges=12, coreReleased=7. Окружение: Go 1.26.5,
+Linux amd64, GTK 4.14.5, X11 DISPLAY=:0. Offline-кеш purego в /tmp сначала
+отсутствовал; восстановлен из локального кеша, после чего проверки прошли.
+Windows cross-build до исправления дал в точности хеши EXE принятого прогона
+2 ноября. Strict validation изменения и пяти основных specs прошла.
+
+Исправление вызывает очистку только новых HWND неудачной попытки через
+CleanupStep до возврата SetParent. Новые peers не владеют текущим прикладным
+callback, технические native-вызовы завершились, доставка под fence запрещена.
+Rollback сначала скрывает созданный корень; ошибка его Destroy сохраняется
+в диагностике операции и не превращается в loop error. Неосвобождённые peers
+остаются учтёнными без event routes для существующего финального Close.
+Успешные отсоединения сохраняют прежнюю отсрочку до безопасного выхода из callback.
+
+Новая нативная регрессия `TestNativeAbortedTreeCleanupWin32` проверяет поздний
+отказ создания с ошибкой DestroyWindow, тот же случай внутри callback и отказ
+после показа нового корня внутри callback. Проверяются обе причины ошибки,
+нефатальный исход, скрытие и отключение маршрутов, отсутствие loop retry,
+продолжение старых событий и успешное последующее присоединение. Сбой
+DestroyWindow внедрён тестом; это не наблюдавшийся системный отказ Windows.
+После исправления полный CGO=0 набор, Windows vet и cross-build backend/UI прошли.
+
+Пакет для автоматического повтора:
+`artifacts/golphi-dynamic-tree-cleanup-review-windows.zip`,
+[manifest](../artifacts/dynamic-tree-cleanup-review-build.txt). Из новой папки:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-dynamic-tree-native-windows.ps1 -BackendExe .\golphi-win32.test.exe -UIExe .\golphi-ui.test.exe
+```
+
+Четыре автоматических теста: новая регрессия, широкий backend, retained HWND,
+core/native/UI. Передать всю папку `artifacts/dynamic-tree-windows`, включая
+`backend-aborted-cleanup.log`. Русский runner и README в UTF-8 с BOM, содержимое
+архива и SHA256 проверены. Новый нативный результат пока не получен.
+
+Устаревшие утверждения об отсутствии Windows-прогона исправлены в текущей
+матрице core/native и комментарии пакета ui. Исторические результаты ниже
+остаются свидетельствами своих сборок. Повторное review Win32 и общей интеграции подтвердило исправление без новых
+замечаний. На 2 ноября оставался нативный Windows-прогон исправленной сборки;
+13 ноября он подтверждён в разделе завершения выше.
+Ручные clipping/внешний фокус и обратное клавиатурное выделение повторять
+не требуется. Этап 5 и остальные Open Questions не закрываются.
+
+## Windows-приёмка задач 4.2–4.3 — 2026-11-02
+
+Пользователь проверил сборку задачи 4.5 на Windows 11 amd64 build 26100,
+DPI 96. [Окружение и SHA256](../artifacts/dynamic-tree-windows-20261102/environment.txt)
+совпадают с [manifest](../artifacts/dynamic-tree-text-only-build.txt).
+
+| Проверка | Результат |
+|---|---|
+| [Широкий backend-набор](../artifacts/dynamic-tree-windows-20261102/backend-native.log.txt) | PASS, exit 0 |
+| [Сохраняемый HWND](../artifacts/dynamic-tree-windows-20261102/backend-retained.log.txt) | PASS, exit 0 |
+| [Core/native/UI](../artifacts/dynamic-tree-windows-20261102/ui-native.log.txt) | PASS, exit 0; OnChange=4/2, nativeChanges=8, coreReleased=7 |
+| [Ручной сценарий](../artifacts/dynamic-tree-windows-20261102/manual-operator.log.txt) | PASS, exit 0; clipping и внешний фокус подтверждены оператором |
+
+[Снимок clipping](../artifacts/dynamic-tree-windows-20261102/clipping.png)
+показывает обрезку ребёнка границей вложенной панели. Во время переноса
+foreground HWND Notepad остался `0x404b8`, размеры панелей не изменились.
+Это наблюдение оператора и снимок, а не автоматическое сравнение пикселей.
+Поздние события старого поколения в core/native тесте проверяются инъекцией;
+системные сбои из этого не выводятся. Linux-результаты записаны в разделе 4.5
+ниже. В совокупности свидетельства закрывают 4.2–4.3 в согласованном объёме.
+
+Журналы скопированы в UTF-8/LF без конечных пробелов, PNG — без изменений;
+исходные файлы пользователя не изменены. На момент этого запуска задача 4.4
+оставалась открытой; её завершение 13 ноября описано выше. Этап 5 и остальные
+открытые вопросы остаются открытыми.
+
+## Текущий объём после сокращения — 2026-11-02
+
+При пересоздании Edit гарантируется текст; восстановление курсора, диапазона и
+направления выделения отложено. Прямой перенос сохраняет фокус, повторное
+присоединение после detach не возвращает его. Для сохраняемого native Edit
+позиции и активный конец по-прежнему проверяются при переносе и откате.
+Тихая материализация, pending/base, ресурсы и диагностика остаются обязательными.
+Задача 4.5 согласовала код и тесты с этой границей. Windows-прогон новой
+сборки подтверждён ниже; задачи 4.2–4.3 выполнены. Итоговое review и приёмка
+4.4 завершены 13 ноября, результаты приведены выше.
+
+Ниже сохранена история экспериментов с прежними требованиями и сборками.
+Исторические проверки восстановления выделения при пересоздании не являются
+требованием текущей приёмки, а старые пакеты не подходят для новой проверки.
+
+### Проверка реализации 4.5
+
+На Linux прошли fake/core tests, полный `CGO_ENABLED=0 go test -count=1 ./...`,
+Linux/Windows vet, GTK-набор из восьми тестов с включёнными native-проверками и core→GTK→core
+(`OnChange=4/2`, `nativeChanges=12`, `coreReleased=7`). Дополнительные три
+прогона Tree/ReplacementTextFocus с CSD подтвердили клиентское начало координат
+и сохранение текста/фокуса. Windows backend/UI test EXE успешно cross-собраны;
+это не Windows native PASS. Strict validation изменения прошла.
+
+Новый пакет: `artifacts/golphi-dynamic-tree-text-only-windows.zip`,
+[manifest](../artifacts/dynamic-tree-text-only-build.txt). В новой папке выполнить:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-dynamic-tree-native-windows.ps1 -BackendExe .\golphi-win32.test.exe -UIExe .\golphi-ui.test.exe
+```
+
+Runner запускает broad suite, retained-HWND и core/native/UI; все три должны
+дать PASS без SKIP. Передать папку `artifacts/dynamic-tree-windows` целиком.
+Русский .ps1 сохранён с UTF-8 BOM и проверен внутри архива. Ручное продолжение
+обратного выделения уже подтверждено ниже; повторять его сейчас не требуется.
+Clipping/внешний фокус в ручном режиме и оставшаяся приёмка остаются открытыми.
+
+### Полученные результаты сохраняемого HWND
+
+Пользовательский запуск 2 ноября на Windows build 26100 завершился PASS:
+[backend](../artifacts/retained-hwnd-windows-20261102/backend-retained.log.txt),
+[core/native/UI](../artifacts/retained-hwnd-windows-20261102/ui-native.log.txt),
+[реальное обратное выделение в транзакции](../artifacts/retained-hwnd-windows-20261102/keyboard-transaction.log.txt).
+[Хеши сборок](../artifacts/retained-hwnd-windows-20261102/environment.txt)
+совпадают с пакетом retained-HWND: backend `7e642199…`, UI `c3828ec9…`.
+Все три процесса вернули 0. Клавиатурный сценарий сохранил диапазон `[2,5]`
+и активный нижний конец; настоящий Shift+Right продолжил его до `[3,5]`.
+Это свидетельство полной транзакции сохраняемого HWND, а не нового пути
+пересоздания. Исходные пользовательские файлы сохранены отдельно; копии в
+репозитории нормализованы в UTF-8/LF, пробелы пустой строки UI-журнала удалены.
+
+## Исходная точка
+
+Ветка `codex/dynamic-component-tree` создана от актуальной `develop`, коммит `82605a8`, без worktree. Исходные отслеживаемые файлы чистые; единственные подготовленные файлы — согласованное предложение. Базовая команда `CGO_ENABLED=0 GOCACHE=/tmp/golphi-gocache GOMODCACHE=/tmp/golphi-gomodcache GOPROXY=off go test -count=1 ./...` прошла. Этот базовый запуск без native opt-in не заменяет нативные проверки.
+
+Сохраняются Go 1.26.5/purego v0.11.2 и матрица принятого MVP: Linux Mint 22.3 amd64 X11 GTK4; Windows 11 Pro amd64 build 26100, масштаб 100%/96 DPI. Фактические версии и масштаб каждого нового прогона фиксируются отдельно.
+
+## Технический этап
+
+| Проверка | Статус |
+|---|---|
+| Подготовка feature-ветки и базовая регрессия | PASS |
+| Linux: вложенность/clipping, перенос и состояние ввода | PASS в ограниченном техническом эксперименте; [журнал](../artifacts/dynamic-tree-linux-probe.txt), [условия и ограничения](dynamic-tree-linux-probe.md) |
+| Windows: подготовка executable и инструкции | Cross-build и review PASS; [русская инструкция](dynamic-tree-windows-probe.md) |
+| Windows: фактический запуск нового native-примера | PASS, 2026-10-29, build 26100, 96 DPI / 100% |
+| Общий Driver для динамического дерева | Внутренний протокол и общий координатор реализованы; fake tests и cross-build PASS, native-интеграция в задачах 4.x |
+
+Технические пробы не являются реализацией публичного динамического API. Ранее принятые MVP-журналы не доказывают новых свойств дерева. Cross-build отдельно от Windows native-прогона. Остальные открытые вопросы сохранены; основные specs не синхронизируются до отдельного запроса.
+
+## Свидетельства первого checkpoint
+
+2026-10-28: Linux Mint 22.3 amd64, Go 1.26.5, пакет GTK4 `4.14.5+ds-0ubuntu0.10`, X11 `DISPLAY=:0`, `GDK_BACKEND=x11`. Переменные GDK_SCALE/GDK_DPI_SCALE не заданы; отдельная матрица масштабов не проверялась. Журнал получен командой:
+
+```sh
+GOLPHI_TREE_PROBE=1 CGO_ENABLED=0 GDK_BACKEND=x11 DISPLAY=:0 GOCACHE=/tmp/golphi-gocache GOMODCACHE=/tmp/golphi-gomodcache GOPROXY=off go test -count=1 -v ./cmd/probe-tree-linux
+```
+
+Нативный эксперимент подтверждает вложенность без роста от ребёнка 1200×600, clipping через hit-test и отрисовку GTK (1200 изменённых пикселей внутри, 0 снаружи), перенос и пересоздание Edit с сохранением фокуса/Unicode-позиций, отсутствие auto-scroll при фокусе, disconnect и финализацию двух Edit. Это не полная интеграция динамического API. Экспериментальная пауза для смены фокуса не принимается как production-протокол: следующий этап должен найти событийное решение с сохранением синхронного контракта SetParent либо сообщить blocker.
+
+Windows-проба проверена ревью и собрана с `GOOS=windows GOARCH=amd64 CGO_ENABLED=0`. На момент первого checkpoint фактический Windows-прогон ещё ожидался; его результат приведён ниже. На том checkpoint технический этап 1.5 ещё не был завершён.
+
+Финальные проверки checkpoint: `CGO_ENABLED=0 go test -count=1 ./...`, `go vet ./...` с теми же offline caches; Windows cross-build и target vet для `cmd/probe-tree-windows`; strict validation изменения и всех пяти основных specs. Общий go test без opt-in не запускает native-тесты.
+
+## Windows native-прогон 2026-10-29
+
+Пользователь выполнил запуск на Windows 11 amd64 build 26100, Go 1.26.5, 96 DPI / 100%, PowerShell 5.1.26100.7462. Сохранены исходные [stdout](../artifacts/dynamic-tree-windows-evidence/20261029-024743.stdout.log), [stderr](../artifacts/dynamic-tree-windows-evidence/20261029-024743.stderr.log) и [result](../artifacts/dynamic-tree-windows-evidence/20261029-024743.result.txt) без изменений.
+
+SHA256 executable `8117275b59becff7bb47babeba433206d2543c3efc072eb31b6e1564bff11880` совпадает с переданным архивом, построенным из `fe006c4`. Финальная строка stdout — `PASS: ALL native dynamic-tree Windows assertions`, stderr пуст. Пользователь сообщил `$LASTEXITCODE = 0`. Поле `ExitCode` в result пустое: журнал runner не доказывает числовой код самого дочернего процесса; это ограничение диагностики сохраняется явно, исходный журнал не исправлялся.
+
+PASS: вложенные панели без роста предков, DC clipping, прямой перенос Edit, пересоздание с сохранением текста/фокуса/UTF-16 selection и caret, реальная ошибка SetParent на недействительный HWND с сохранением источника и восстановлением состояния, native callback на startup thread, отдельный worker thread и уничтожение формы. Сообщение `FAILURE-INJECTION ... Invalid window handle` — ожидаемый проверяемый отказ, после которого assertions проходят.
+
+Задача 1.3 завершена. Доступен следующий шаг 1.4 — внутренний Driver на основании обоих экспериментов. Это ещё не проверка production-транзакций или всего динамического API; ограничения технических проб и остальные открытые вопросы сохраняются.
+
+## Внутренний Driver — 2026-10-29
+
+Добавлены Panel, запрос/результат операции над полным поддеревом, снимок ввода в Unicode scalar offsets, поколения маршрутизации событий и протокол Prepare/Commit/Rollback/Cleanup/Finish. [Контракт backend](backend-contract.md) определяет владение попыткой и старым состоянием, публикацию под запретом доставки, поздние сигналы и безопасное освобождение callback roots.
+
+Общий `ApplyTree` проверен fake native-операциями: публикация целого результата после commit, отсутствие публикации при ошибках Prepare/Commit, rollback, аварийный hook до cleanup, сохранение исходной ошибки и сбоев восстановления/очистки, перехват cleanup panic со стеком и продолжение независимой очистки. Эти тесты проверяют реальную общую логику, но не поведение toolkit.
+
+GTK/Win32 временно используют явный `ErrTreeUnsupported` для новых методов. Прежний статический путь и examples/hello сохраняются. Публичный runtime ещё не вызывает динамическую границу; это не завершённая реализация Panel/SetParent во время Run. Настоящие транзакции, преобразование native-позиций, поколения сигналов и безопасное завершение callback будут проверяться в последующих задачах. В частности, синхронное восстановление фокуса GTK без экспериментальной паузы остаётся обязательной проверкой реализации, а не уже доказанной возможностью адаптера.
+
+Проверки после изменения: `CGO_ENABLED=0 go test -count=1 ./...`, Linux и Windows `go vet ./...`, `GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build ./...`, strict validation изменения и пяти основных specs, `git diff --check` — PASS. Использованы offline caches `/tmp/golphi-gocache` и `/tmp/golphi-gomodcache`, `GOPROXY=off`. Native-пробы в этом checkpoint повторно не запускались: их код и нативный статический путь не менялись. Результаты прежних прогонов не объявляются проверкой новой production-интеграции.
+
+Независимое review задач 1.4–1.5: соответствие требованиям и качество — PASS, блокирующих замечаний нет. Технический этап завершён; задачи логического графа, runtime-транзакций и нативной интеграции остаются открытыми.
+
+## Логический граф и guards — 2026-10-29
+
+Добавлены экспериментальные закрытые роли `Component`/`Container` и логическая `Panel` без текстового API. Owner обязателен и неизменяем, кроме корневой Form; nil/typed-nil и уничтоженный Owner отклоняются до регистрации. Parent допускает Form/Panel одной корневой формы по цепочке Owner; self-parent, циклы, другой корень и уничтоженная цель дают error без изменения связей и уведомлений. Уничтоженный получатель проверяется первым.
+
+Startup обходит общие Owner/Parent связи, создаёт визуальное дерево в порядке родитель перед ребёнком и учитывает отсоединённых owned-потомков. Тест с fake Driver проверяет вложенные панели и обратный порядок создания логических объектов. Каскад из callback ребёнка проверяет немедленный Destroyed, пересекающиеся связи, подавление позднего Click, освобождение после callback ровно один раз и сохранение работоспособности соседнего компонента.
+
+Во время Run обычные конструкторы и связывание отсоединённых объектов доступны на UI-потоке без native-вызовов. SetBounds разрешён живому отсоединённому поддереву независимо от прежнего started; geometry присоединённых started-компонентов и SetClientSize после начала Run остаются запрещены. Worker-вызовы конструкторов, SetParent и SetBounds, включая no-op, вызывают panic на worker до изменений; subprocess проверяет перехват там же и положительный путь через Post от worker. Новые detached-компоненты пока не получают runtime/native binding: это часть следующего этапа материализации.
+
+Проверки: полный `CGO_ENABLED=0 go test -count=1 ./...` (включая subprocess/fake сценарии), `go vet ./...` для Linux и Windows, `GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build ./...`, strict validation изменения и пяти основных specs, `git diff --check` — PASS. Кеши `/tmp/golphi-gocache`, `/tmp/golphi-gomodcache`, `GOPROXY=off`.
+
+Этот этап не подтверждает отображение Panel в GTK/Win32, clipping или production-перенос во время Run. Нативные адаптеры ещё не реализуют новые операции; реальные изменения присоединённого дерева во время Run пока явно отклоняются. Снимки ввода, атомарная материализация, смена базы/отмена уведомлений по всему поддереву и обработка ошибок транзакций остаются задачами 3.x/4.x. Несколько окон, смена Owner и остальные открытые вопросы не закрывались.
+
+Итоговое review логического этапа: соответствие требованиям и качество — PASS, блокирующих дефектов нет. Уточнены документация startup-порядка и граница принятого native MVP относительно логического API.
+
+## Транзакции, события и отказы общего ядра — 2026-10-29
+
+Этот этап дополняет предыдущий логический граф: публичный SetParent подключён к ApplyTree, новые компоненты учитываются runtime, а peer-связи публикуются с поколениями маршрутизации. GTK/Win32 пока сохраняют UnsupportedTree; результаты ниже относятся к общему ядру с fake Driver, не к завершённой native-интеграции.
+
+| Гарантия | Свидетельство |
+|---|---|
+| Готовность всего поддерева до nil, обычный отказ позднего ребёнка и повторная попытка | TestTreeMaterializationRollbackRetry |
+| Четыре перехода, подавление технических сигналов, сохранение/отмена pending и однократный teardown | TestTreeAttachmentTransitions |
+| Новая база OnChange после reattach, отсутствие рекурсии, nil/replacement/destroy и устаревшие поколения | TestTreeReattachmentComparison (8 сценариев) |
+| Unicode-позиции и ввод, fresh native state, прямой перенос/откат, detached same/changed text, без захвата фокуса | TestTreeInputState |
+| E/E1/W при восстановленном состоянии: отдельная диагностика и продолжение работы | TestTreeRecoverableCleanup |
+| E/R/cleanup при невозможном восстановлении, в том числе первом attach, остановка до cleanup, завершение callback и гонка Post | TestTreeFatalRollback (2 сценария) |
+
+Тесты используют настоящий Form.Run/SetParent и общий координатор; fake моделирует native-размещение, ввод, ошибки и безопасное отложенное освобождение. Прикладные события, очереди, публикация, снимок отсоединённого Edit и остановка остаются production-кодом. Config.Input передаёт подготовленное выделение при первом запуске; реальное применение этого поля native-адаптерами требуется на этапе 4.x.
+
+Регрессия старых callback/Post panic, normal close и startup failure проходит в общем наборе. Также проверены CGO_ENABLED=0 сборки Linux и Windows amd64, vet обеих целей, strict validation изменения и пяти основных specs, git diff --check. Проверка Windows здесь — сборка; нового нативного Windows-прогона этот этап не заявляет. Точные правила и ограничения описаны в [runtime](dynamic-tree-runtime.md), [событиях](contracts/component-events.md) и [диагностике попытки](dynamic-tree-failures.md).
+
+Сохранены открытыми публичные диагностические типы/формат, сочетания fatal SetParent с последующими вызовами/паникой обработчика, retry и судьба неосвобождённых ресурсов, порядок зависимой очистки и остальные исключённые вопросы. Реальный синхронный GTK focus protocol, clipping, преобразование native-позиций, late callbacks и callback roots должны быть подтверждены адаптерами отдельно.
+
+Итоговое review этапа 3: соответствие спецификации и качество — PASS, блокирующих замечаний нет. Дополнительная проверка `CGO_ENABLED=1 go test -race ./ui ./internal/backend` — PASS. Все перечисленные проверки выполнены координатором после объединения задач этапа; нативная интеграция 4.x остаётся незавершённой.
+
+## Нативная интеграция — 2026-10-29
+
+GTK4 и Win32 реализуют Panel, Config.Input, SnapshotInput и транзакции дерева. GTK переносит поддеревья с Edit через пересоздание с сохранением старых реализованных объектов до передачи ввода новым; это предотвращает позднюю потерю PRIMARY-выделения X11. Поддеревья без Edit используют переподчинение. Win32 сохраняет HWND при прямом переносе. Логические уведомления и атомарность одинаковы; подробности в [GTK](dynamic-tree-gtk4-integration.md), [Win32](dynamic-tree-win32-integration.md) и [общей интеграции](dynamic-tree-core-native.md).
+
+| Проверка координатора | Результат |
+|---|---|
+| Полный `CGO_ENABLED=0 go test -count=1 ./...`, Linux build/vet | PASS |
+| Windows amd64 CGO_ENABLED=0 build/vet, компиляция двух test EXE | PASS сборки; не native acceptance |
+| Все 8 GTK-тестов с `GOLPHI_GTK_NATIVE=1` | PASS, включая физическую финализацию и clipping 1200/0 |
+| Активное GTK-окно с `GTK_CSD=1`, Tree/ReplacementSelection | PASS, смещение root `[0 46 640 434]` сохранено до и после frame |
+| Старые native-core/native-close и новый dynamic core→native→core | PASS |
+| `CGO_ENABLED=1 go test -race ./ui ./internal/backend` | PASS |
+| Реальный Win32, clipping и foreground другого приложения | Ожидаются Windows-логи и ручные наблюдения |
+
+Команды выполнялись с `GOCACHE=/tmp/golphi-gocache GOMODCACHE=/tmp/golphi-gomodcache GOPROXY=off`. Нативные Linux-команды: `DISPLAY=:0 GDK_BACKEND=x11 GOLPHI_GTK_NATIVE=1 CGO_ENABLED=0 go test ./internal/backend/gtk4 -count=1 -v -timeout 30s`; затем `DISPLAY=:0 GDK_BACKEND=x11 GOLPHI_NATIVE_TREE=1 GOLPHI_NATIVE_CORE=1 GOLPHI_NATIVE_WM_CLOSE=1 CGO_ENABLED=0 go test ./ui -run '^TestNative(CoreIntegration|DynamicTreeIntegration)$' -count=1 -v -timeout 45s`. CSD-регрессия: первая команда с `GTK_CSD=1 -run '^TestNative(Tree|ReplacementSelection)$'`. Окружение прежнее: Linux Mint 22.3 amd64, Go 1.26.5, GTK 4.14.5, X11; переменные GDK_SCALE/GDK_DPI_SCALE не заданы.
+
+Для Windows подготовлен `artifacts/golphi-dynamic-native-windows.zip`: два консольных EXE, русская инструкция, runner и SHA256. Команды сборки и хеши — [manifest](../artifacts/dynamic-tree-native-build.txt). PowerShell-скрипт запускает автоматические тесты, а `-Manual` добавляет ограниченный по времени интерактивный сценарий. Подтверждения оператора и машинные наблюдения сохраняются раздельно; manual PASS не выдаётся за автоматическое сравнение пикселей. PowerShell и Windows EXE здесь не выполнялись.
+
+Fake fault injection, API-boundary fault injection, старые токены и реальные native-сигналы различены в отчётах. Не добавлены обещания для IME, Wayland, DPI switching, нескольких форм, cleanup retry и остальных открытых вопросов. До фактической Windows-проверки задачи 4.2–4.4 и общий этап приёмки остаются открытыми.
+
+Независимое review GTK после исправлений — PASS; review Win32 одобряет готовность к нативному запуску. Общий integration checkpoint — PASS. Подсказка runner дополнена путём инструкции внутри архива. Strict validation изменения и пяти основных specs, `git diff --check` — PASS. Завершена задача 4.1; Windows-зависимые пункты не отмечены выполненными.
+
+### Полученный отказ Windows — 2026-10-29
+
+Пользователь запустил автоматическую проверку на Windows build 26100. Хеши backend/UI совпали с manifest переданного пакета. `TestNativeDynamicTreeWin32` завершился FAIL на `tree_native_windows_test.go:120`: `selection direction cannot be established unambiguously`, `EXIT_CODE=1`. Это сценарий сфокусированного обратного выделения перед прямым переносом. [Журнал](../artifacts/dynamic-tree-windows-failure-20261029/backend-native.log.txt) сохранён с декодированием UTF-16 в UTF-8; [окружение](../artifacts/dynamic-tree-windows-failure-20261029/environment.txt) — с нормализацией UTF-8 BOM.
+
+Исключение PowerShell на скриншоте сообщает о ненулевом коде теста; это не ошибка разбора `.ps1`. Отдельно исправлена кодировка русского runner: UTF-8 с BOM, правило закреплено в AGENTS.md. Windows-приёмка остаётся открытой; исходный краткий журнал не различает фазу снимка и не содержит native-координат, поэтому сам по себе не устанавливает причину неоднозначности.
+
+Подготовлен отдельный `artifacts/golphi-dynamic-native-windows-diagnostic.zip` с фазами отказа и read-only native-трассировкой. [Новый manifest](../artifacts/dynamic-tree-native-diagnostic-build.txt). Это диагностическая сборка, не подтверждённое исправление выделения. Полный CGO_ENABLED=0 набор тестов и Linux/Windows vet прошли; Windows test EXE пересобраны. Требуется повторный автоматический запуск, ручная проверка пока не нужна.
+
+### Уточнение по диагностическому прогону Windows — 2026-10-29
+
+[Новый журнал](../artifacts/dynamic-tree-windows-diagnostic-20261029/backend-native.log.txt) и [окружение](../artifacts/dynamic-tree-windows-diagnostic-20261029/environment.txt) соответствуют хешам диагностической сборки. Отказ происходит в `PrepareTree snapshot` до нативного переноса. При DPI 96 наблюдается `caret=(35,2)`, границы символов `(10,0)` и `(35,0)`: полное сравнение XY не учитывает вертикальное смещение каретки однострочного Edit. После `EM_SETSEL` фактическая каретка всё ещё у старшей границы, хотя кеш содержит обратное направление `[6,1]`. Оба расхождения подтверждены журналом; внутреннюю причину сохранения позиции после установки того же диапазона он не устанавливает.
+
+Нативная приёмка по-прежнему не выполнена. Исправление должно проверять реальную каретку, а не выдавать запрошенное направление из кеша за наблюдаемое.
+
+Подготовлен кандидат исправления: однострочное сравнение по однозначному X, обновление кеша по фактической каретке и переход через свёрнутый диапазон перед восстановлением направления с последующим readback. Регрессия на координатах из журнала прошла RED/GREEN; добавлены нативные проверки смены направления одного диапазона. Полный CGO_ENABLED=0 набор, Linux/Windows vet, Windows test cross-build, strict validation и review — PASS. Нативный результат кандидата ещё ожидается. Пакет `artifacts/golphi-dynamic-native-windows-selection-fix.zip`, [manifest](../artifacts/dynamic-tree-native-selection-fix-build.txt); русский runner сохраняет UTF-8+BOM. Следующий прогон — только автоматические тесты.
+
+
+## Изолированная диагностика выделения — 2026-10-29
+
+Кандидат `ef89b06` проверен пользователем на Windows build 26100:
+[журнал](../artifacts/dynamic-tree-windows-selection-fix-failure-20261029/backend-native.log.txt),
+[окружение и SHA256](../artifacts/dynamic-tree-windows-selection-fix-failure-20261029/environment.txt).
+Хеши совпали с переданной сборкой. `restoreInput` до переноса возвращает
+`selection restore direction mismatch: requested scalar=[4,1] observed=[1,4]`.
+Переход через свёрнутый диапазон не подтвердился как способ восстановления
+обратного выделения; UI-тест ещё не запускался. Windows-приёмка остаётся открытой.
+
+Следующий шаг — отдельный `TestNativeEditSelectionProbe`, запускаемый через
+`scripts/probe-edit-selection-windows.ps1`. Он сравнивает обычный EDIT и EDIT
+с оконной процедурой Golphi, прямое/обратное выделение и отдельные эксперименты
+с индексом каретки. Это сбор наблюдений, а не исправление production-кода.
+PASS диагностического теста означает только завершение сбора данных;
+он не закрывает задачи 4.2–4.4 и не заменяет нативные интеграционные тесты.
+Русский PowerShell-скрипт и инструкция в архиве сохраняются с UTF-8 BOM.
+
+
+## Выделение клавиатурой и перенос HWND — 2026-10-29
+
+[Изолированная проба](../artifacts/edit-selection-probe-windows-20261029/selection-probe.log.txt)
+завершила 24 случая, exit code 0; [SHA256 и окружение](../artifacts/edit-selection-probe-windows-20261029/environment.txt)
+совпали с пакетом. На Windows build 26100 / DPI 96 обычный EDIT и EDIT с
+обработкой Golphi показали одинаковые результаты. Прямой и обратный EM_SETSEL,
+включая collapse-then-set, оставляют каретку у верхней границы для ASCII и
+строки с суррогатными парами. EM_GETCARETINDEX возвращает 0 даже при свёрнутой
+каретке в ненулевой позиции; EM_SETCARETINDEX видимого изменения не даёт.
+В этой конфигурации использовать их как достоверное чтение/восстановление нельзя.
+
+Следующий диагностический эксперимент: оператор создаёт `[2,5]` в `ABCDEF`
+через End, Left и три Shift+Left, запускает F8 с фокусом в Edit. Тот же HWND
+переносится `place` между панелями без `restoreInput` и EM_SETSEL. Читаем native
+состояние до, сразу после и после прохождения опубликованного сообщения через
+очередь Windows. Затем оператор нажимает Shift+Right один раз и F9: `[3,5]`
+с кареткой на нижней границе проверяет продолжение изменения нужного конца.
+Негативный результат сохраняется как наблюдение; PASS означает завершение
+диагностики. Это не весь production ApplyTree: он пока вызывает restoreInput.
+Код библиотеки, OpenSpec checkbox и остальные открытые вопросы не меняются.
+
+Пакет `artifacts/golphi-edit-keyboard-selection-probe-windows.zip` содержит
+русскую инструкцию и `scripts/probe-edit-keyboard-selection-windows.ps1` в
+UTF-8 с BOM. После запуска передать оба файла из
+`artifacts/edit-keyboard-selection-probe`, в том числе при неуспешном завершении.
+
+
+## Проба восстановления фокуса после переноса — 2026-10-29
+
+[Клавиатурная проба](../artifacts/edit-keyboard-selection-windows-20261029/keyboard-selection-probe.log.txt)
+и [окружение](../artifacts/edit-keyboard-selection-windows-20261029/environment.txt)
+соответствуют manifest диагностического пакета коммита `0ffc831`
+(SHA256 EXE `592701b7b6f94fbdc67ca0eac2822125cea8526a068c6a44c2512fb40115bcf9`). Начальное обратное выделение `[2,5]`
+в `ABCDEF` подтверждено с фокусом Edit и кареткой у нижней границы. После
+`place` HWND и диапазон сохраняются, но фокус уходит в старую Panel и остаётся
+там после доставки контрольного сообщения. Сбор завершился exit code 0 с
+`continuation_performed=false reason=focus-lost-after-move`. Координаты каретки
+без фокуса Edit не доказывают сохранение активного конца; продолжение ввода
+не было проверено.
+
+По согласованию добавлен режим `-RestoreFocus` к диагностическому runner.
+После переноса и чтения immediate ровно один SetFocus возвращает фокус прежнему
+HWND Edit. Сразу читаются GetFocus и native-состояние, затем доставляется
+контрольное сообщение и проверяется настоящий Shift+Right/F9. EM_SETSEL и
+restoreInput не вызываются. Возврат фокуса неудачен — фиксируется отрицательное
+наблюдение, без повторного нажатия мышью и восстановления выделения.
+
+Распаковать `artifacts/golphi-edit-focus-restore-probe-windows.zip` в новую папку
+и выполнить:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\probe-edit-keyboard-selection-windows.ps1 -RestoreFocus
+```
+
+Последовательность: щёлкнуть ABCDEF; End; Left один раз; Shift+Left три раза;
+отпустить Shift; F8; после подсказки формы Shift+Right один раз, отпустить
+Shift и F9. Не переключать фокус. Передать `keyboard-selection-probe.log` и
+`environment.txt` из `artifacts/edit-keyboard-selection-probe`. Русский .ps1
+сохранён с UTF-8 BOM. Сборка и статическая проверка не заменяют запуск на Windows;
+PASS пробы означает сбор данных. Production-код и задачи приёмки не меняются.
+
+
+## Транзакция переноса существующего HWND — 2026-10-29
+
+[Проба возврата фокуса](../artifacts/edit-focus-restore-windows-20261029/keyboard-selection-probe.log.txt)
+с [окружением](../artifacts/edit-focus-restore-windows-20261029/environment.txt)
+подтвердила на Windows build 26100: после place и SetFocus выделение `[2,5]`
+с кареткой у нижней границы сохранилось до/после доставки контрольного сообщения;
+настоящий Shift+Right дал `[3,5]` с прежним якорем 5. `continuation_matches=true`.
+Этот эксперимент проверял place+SetFocus, а не полную транзакцию.
+
+Исправлена существующая ветка Commit/Rollback Win32: для сохранённых HWND
+после переноса/возврата размещения восстанавливается фокус, затем SnapshotInput
+сравнивает Text/Anchor/Caret/Focused с исходным снимком. restoreInput и EM_SETSEL
+для этих сохранённых объектов не вызываются. Несовпадение не считается успехом:
+ошибка идёт через прежний откат, а невозможность восстановления — через
+аварийный исход. Создание/повторная материализация Edit не изменены.
+
+Добавлен отдельный `TestNativeRetainedHWNDTransferWin32`: существующий Edit,
+поддерево Panel с Edit, фокус внутри/снаружи, Unicode/UTF-16, сохранение HWND и
+откат после реального Commit с явно внедрённой ошибкой, отменённое
+отсоединение и ошибку частичной Prepare. Проверяется продвижение поколения
+событий; намеренная порча ввода после Prepare проверяет отказ Commit/Rollback
+и сохранение аварийного запрета доставки. Тестовый spy проверяет
+отсутствие EM_SETSEL во время переноса и отката. Это fault injection после
+Commit, а не наблюдавшаяся системная ошибка Windows.
+
+Клавиатурная проба получила интеграционный режим: F8 теперь вызывает настоящий
+backend.ApplyTree, включая Prepare/Commit/Finish; фокус восстанавливает
+production-транзакция. В этом режиме неправильное состояние и продолжение
+ввода означают FAIL, а не успешное завершение диагностического сбора. Исходные
+диагностические режимы сохранены. Для проверки потребуется настоящий Windows.
+
+Пакет `artifacts/golphi-retained-hwnd-windows.zip`, команда из новой папки:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-retained-hwnd-windows.ps1 -BackendExe .\golphi-win32.test.exe -UIExe .\golphi-ui.test.exe -Keyboard
+```
+
+Сначала выполняются отдельный автоматический backend-тест и core/native/UI,
+затем клавиатурный сценарий End → Left → Shift+Left три раза → отпустить Shift
+→ F8 → по подсказке Shift+Right один раз → отпустить Shift → F9. Логи в
+`artifacts/retained-hwnd-windows`. Скрипт в UTF-8 с BOM.
+
+Это узкая проверка существующих HWND. Старый TestNativeDynamicTreeWin32
+с проверками восстановления обратного выделения при создании/пересоздании
+сохраняется, но этим runner не запускается: его известный блокер не устранён.
+Задачи 4.2–4.4 и общая приёмка не закрыты, остальные вопросы остаются открытыми.

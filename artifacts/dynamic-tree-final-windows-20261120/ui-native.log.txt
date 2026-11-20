@@ -1,0 +1,14 @@
+=== RUN   TestNativeDynamicTreeIntegration
+=== RUN   TestNativeDynamicTreeIntegration/native-tree
+    tree_native_test.go:238: native tree PASS: OnChange=4/2 nativeChanges=8 coreReleased=8; old-epoch events=injected
+
+=== RUN   TestNativeDynamicTreeIntegration/native-pending-child-move
+    tree_native_test.go:238:
+=== RUN   TestNativeDynamicTreeIntegration/native-pending-child-detach
+    tree_native_test.go:238:
+--- PASS: TestNativeDynamicTreeIntegration (0.34s)
+    --- PASS: TestNativeDynamicTreeIntegration/native-tree (0.28s)
+    --- PASS: TestNativeDynamicTreeIntegration/native-pending-child-move (0.03s)
+    --- PASS: TestNativeDynamicTreeIntegration/native-pending-child-detach (0.03s)
+PASS
+EXIT_CODE=0

@@ -1,0 +1,4 @@
+=== RUN   TestNativeRetainedHWNDTransferWin32
+--- PASS: TestNativeRetainedHWNDTransferWin32 (0.08s)
+PASS
+EXIT_CODE=0

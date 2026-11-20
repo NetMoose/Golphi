@@ -1,0 +1,4 @@
+Diagnostic Windows handoff 2026-10-29. Native cause unresolved; selection behavior unchanged.
+Go1.26.5; GOOS=windows GOARCH=amd64 CGO_ENABLED=0; go test -c -buildvcs=false ./internal/backend/win32 and ./ui
+064844b54dffc447f02177fb31c63eee22421083053d1514e78dabd73e5c78ca  golphi-win32.test.exe
+f590939183e5a95295e050549ed5e9e008973ede8c58b5cd8da3c952c3a3ce01  golphi-ui.test.exe

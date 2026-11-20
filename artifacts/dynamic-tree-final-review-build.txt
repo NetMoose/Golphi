@@ -1,0 +1,7 @@
+Task5.4 checkpoint after f2c29f0 plus reviewed cleanup-order/atomic-guard/lifetime fixes. CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go test -c -buildvcs=false. Current native Windows run pending.
+a401d51fce01f0e023e50dcb58f43b7da2698f480f32703657aa59ccec05a84b  DETAILS-RU.md
+345b7b1b1cf63d362ebf77a94e9e0de1ecfdcf9e5641878d0db4f3028733bbf7  README-RU.md
+4abe66a8b6a744f88e74bb7f05e22b648e371f3672fca0ea2b4ca923c56250e6  golphi-ui.test.exe
+18b007cf57fba6600aa27879478ba1ac9493e8bbb82d82ae82737981a0bbdebe  golphi-win32.test.exe
+e03df2e0cbce176a9893706bb6f9ab4a8ffa53b98f06004d5392b8b13e305989  scripts/verify-dynamic-tree-native-windows.ps1
+ZIP SHA256=e3e2d2f8e59f8ac083fb4b2780a9a63a24395761ef09148d41b8521c82af59de

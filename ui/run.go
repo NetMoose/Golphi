@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"sync/atomic"
 
@@ -26,23 +27,24 @@ func (f *Form) Run() (err error) {
 	}
 	runActive.Store(true)
 	defer runActive.Store(false)
-	r := &application{form: f, peers: make(map[*component]backend.Peer), components: make(map[backend.Peer]*component)}
+	r := &application{form: f, peers: make(map[*component]backend.Peer), components: make(map[backend.Peer]*component), bindingGenerations: make(map[backend.Peer]uint64)}
 	r.participants = append(r.participants, &f.component)
 	// Include detached owned controls for latching and event cancellation, but
 	// create peers only for the visual children of this single main window.
 	seen := map[*component]bool{&f.component: true}
-	for c := range f.owned {
-		if !seen[c] {
-			seen[c] = true
-			r.participants = append(r.participants, c)
+	var collect func(*component)
+	collect = func(parent *component) {
+		for _, edges := range []map[*component]struct{}{parent.owned, parent.children} {
+			for c := range edges {
+				if !seen[c] {
+					seen[c] = true
+					r.participants = append(r.participants, c)
+					collect(c)
+				}
+			}
 		}
 	}
-	for c := range f.children {
-		if !seen[c] {
-			seen[c] = true
-			r.participants = append(r.participants, c)
-		}
-	}
+	collect(&f.component)
 	sort.Slice(r.participants, func(i, j int) bool { return r.participants[i].order < r.participants[j].order })
 	for _, c := range r.participants {
 		c.started = true
@@ -70,11 +72,16 @@ func (f *Form) Run() (err error) {
 		return nil
 	}
 	ordered := []*component{&f.component}
-	for _, c := range r.participants {
-		if c != &f.component && c.parent == f {
-			ordered = append(ordered, c)
+	var appendChildren func(*component)
+	appendChildren = func(parent *component) {
+		for _, c := range r.participants {
+			if c.parent != nil && c.parent.componentIdentity() == parent {
+				ordered = append(ordered, c)
+				appendChildren(c)
+			}
 		}
 	}
+	appendChildren(&f.component)
 	for _, c := range ordered {
 		bounds := c.bounds
 		if bounds.Width == 0 || bounds.Height == 0 {
@@ -84,9 +91,9 @@ func (f *Form) Run() (err error) {
 				bounds.Width, bounds.Height = 120, 28
 			}
 		}
-		cfg := backend.Config{Kind: c.kind, Text: c.text, Bounds: bounds}
+		cfg := backend.Config{Kind: c.kind, Text: c.text, Bounds: bounds, Input: c.copySavedInput()}
 		if c.parent != nil {
-			cfg.Parent = r.peers[&c.parent.component]
+			cfg.Parent = r.peers[c.parent.componentIdentity()]
 		}
 		p, e := r.driver.Create(cfg)
 		if e != nil {
@@ -109,6 +116,7 @@ func (f *Form) Run() (err error) {
 			return e
 		}
 		c.text = actual
+		c.savedInput = nil
 		if r.failed {
 			return nil
 		}
@@ -121,7 +129,7 @@ func (f *Form) Run() (err error) {
 			return nil
 		}
 	}
-	for _, c := range r.created {
+	for _, c := range r.participants {
 		c.runtime = r
 	}
 	if r.failed {
@@ -144,6 +152,9 @@ type application struct {
 	participants, created []*component
 	peers                 map[*component]backend.Peer
 	components            map[backend.Peer]*component
+	bindingGenerations    map[backend.Peer]uint64
+	treeChanging          bool
+	pendingDestruction    bool
 	running, failed       bool
 	primary               *backend.Panic
 	failures              []error
@@ -193,9 +204,14 @@ func (r *application) destroyPeer(c *component) {
 	}
 	delete(r.peers, c)
 	delete(r.components, p)
+	delete(r.bindingGenerations, p)
 	r.cleanupOp("destroy", func() error { return r.driver.Destroy(p) })
 }
 func (r *application) componentDestroyed(c *component) {
+	r.pendingDestruction = true
+	if c.parent != nil && r.peers[c] != 0 {
+		c.releaseParent = r.peers[c.parent.componentIdentity()]
+	}
 	if c == &r.form.component {
 		r.stop()
 		r.driver.Quit()
@@ -203,7 +219,7 @@ func (r *application) componentDestroyed(c *component) {
 	// Resource release happens in outer dispatch or after native Run returns.
 }
 func (r *application) event(e backend.Event) {
-	if !r.running {
+	if !r.running || r.treeChanging {
 		return
 	}
 	if e.Kind == backend.CloseRequest {
@@ -212,7 +228,7 @@ func (r *application) event(e backend.Event) {
 		return
 	}
 	c := r.components[e.Peer]
-	if c == nil || c.destroyed {
+	if c == nil || c.Destroyed() || r.bindingGenerations[e.Peer] != e.Generation {
 		return
 	}
 	if p := backend.Capture(func() {
@@ -228,7 +244,7 @@ func (r *application) event(e backend.Event) {
 	}
 }
 func (r *application) dispatch() *backend.Panic {
-	if !r.running {
+	if !r.running || r.treeChanging {
 		return r.primary
 	}
 	if p := r.queue.Dispatch(); p != nil {
@@ -236,10 +252,22 @@ func (r *application) dispatch() *backend.Panic {
 		r.driver.Quit()
 		return p
 	}
-	for i := len(r.created) - 1; i >= 0; i-- {
-		c := r.created[i]
-		if c.destroyed {
-			r.destroyPeer(c)
+	if r.pendingDestruction {
+		r.pendingDestruction = false
+		for i := len(r.created) - 1; i >= 0; i-- {
+			if c := r.created[i]; c.Destroyed() {
+				r.destroyPeer(c)
+			}
+		}
+		if len(r.failures) == 0 {
+			r.created = slices.DeleteFunc(r.created, (*component).Destroyed)
+			r.participants = slices.DeleteFunc(r.participants, func(c *component) bool {
+				if !c.Destroyed() {
+					return false
+				}
+				c.runtime = nil
+				return true
+			})
 		}
 	}
 	if len(r.failures) > 0 {
@@ -248,7 +276,7 @@ func (r *application) dispatch() *backend.Panic {
 	}
 	return r.primary
 }
-func (r *application) eventsRunning() bool { return r.running }
+func (r *application) eventsRunning() bool { return r.running && !r.treeChanging }
 func (r *application) enqueueEvent(fn func()) {
 	if err := r.queue.Post(fn); err != nil && r.running {
 		panic(err)

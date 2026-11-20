@@ -60,7 +60,7 @@ func TestEventsEffectiveAndSilent(t *testing.T) {
 		t.Fatal(err)
 	}
 	e.SetText("detached")
-	if err := e.SetParent(e.Owner()); err != nil {
+	if err := e.SetParent(e.Owner().(Container)); err != nil {
 		t.Fatal(err)
 	}
 	r.drain()

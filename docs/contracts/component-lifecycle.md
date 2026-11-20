@@ -1,5 +1,15 @@
 # Жизненный цикл компонентов Golphi
 
+Ниже сохранены исходные трассировки E0 и вопросы в их исторической формулировке.
+Для текущего дерева действует [дельта жизненного цикла](../../openspec/changes/implement-dynamic-component-tree/specs/component-lifecycle/spec.md).
+Она определяет роли Component и Container, Panel, проверки Owner-корня и цикла,
+потоковые ограничения и синхронный SetParent. Трассировки сохранения прежней
+работоспособности относятся к обычному отказу. При невозможности восстановления
+действует аварийная остановка, а независимые сбои очистки включаются в диагностику
+попытки. Повтор первого присоединения возможен после обычного отказа.
+Текущие правила и свидетельства описаны в [документации API](../components-mvp.md)
+и [диагностике отказов](../dynamic-tree-failures.md).
+
 Этот документ описывает целевой контракт, принятый в [изменении define-component-contract](../../openspec/changes/archive/2026-10-27-define-component-contract/design.md), и проверяемые примеры из [спецификации жизненного цикла](../../openspec/changes/archive/2026-10-27-define-component-contract/specs/component-lifecycle/spec.md). Дополнения об уничтожении приняты в [изменении define-destruction-and-event-failure-contract](../../openspec/changes/archive/2026-10-27-define-destruction-and-event-failure-contract/design.md) и проверяются его [дельтой component-lifecycle](../../openspec/changes/archive/2026-10-27-define-destruction-and-event-failure-contract/specs/component-lifecycle/spec.md). Он не подтверждает наличие работающей библиотеки или поддержку операций конкретным backend и не означает завершение E0.
 
 ## Две независимые связи

@@ -1,0 +1,294 @@
+//go:build windows && amd64
+
+package win32
+
+import (
+	"errors"
+	"fmt"
+	"github.com/NetMoose/Golphi/internal/backend"
+)
+
+type treeTransaction struct {
+	d                  *driver
+	change             backend.TreeChange
+	input              map[backend.Peer]backend.InputState
+	focus              uintptr
+	oldRoot            peer
+	created            []backend.Peer
+	result             backend.TreeResult
+	mutated, committed bool
+}
+
+func (d *driver) PrepareTree(c backend.TreeChange) (backend.TreeTransaction, error) {
+	if d.fenced || d.deliveryStopped {
+		return nil, errors.New("win32: tree transaction unavailable")
+	}
+	if len(c.Nodes) == 0 {
+		return nil, errors.New("win32: empty tree")
+	}
+	if c.ToAttached {
+		p, err := d.get(c.Target)
+		if err != nil {
+			return nil, err
+		}
+		if p.kind != backend.Panel && p.kind != backend.Form {
+			return nil, errors.New("win32: target is not a container")
+		}
+	}
+	d.fenced = true
+	tx := &treeTransaction{d: d, change: c, input: make(map[backend.Peer]backend.InputState)}
+	tx.focus, _, _ = d.api["GetFocus"].Call()
+	if c.FromAttached {
+		for i, n := range c.Nodes {
+			p, err := d.get(n.Peer)
+			if err != nil {
+				return tx, err
+			}
+			if i == 0 {
+				tx.oldRoot = p
+			}
+			if p.kind == backend.Edit {
+				s, err := d.SnapshotInput(n.Peer)
+				if err != nil {
+					return tx, fmt.Errorf("PrepareTree snapshot node=%d peer=%d: %w", n.ID, n.Peer, err)
+				}
+				tx.input[n.Peer] = s
+			}
+		}
+	}
+	return tx, nil
+}
+func (tx *treeTransaction) Commit() (backend.TreeResult, error) {
+	d, c := tx.d, tx.change
+	ids := make(map[backend.NodeID]backend.Peer)
+	for i, n := range c.Nodes {
+		id := n.Peer
+		if !c.FromAttached && c.ToAttached {
+			parent := c.Target
+			if i != 0 {
+				parent = ids[n.Parent]
+			}
+			var err error
+			id, err = d.Create(backend.Config{Kind: n.Kind, Parent: parent, Text: n.Text, Bounds: n.Bounds, Input: n.Input})
+			if err != nil {
+				return backend.TreeResult{}, err
+			}
+			tx.created = append(tx.created, id)
+		}
+		ids[n.ID] = id
+		binding := backend.TreeBinding{ID: n.ID}
+		if s, ok := tx.input[n.Peer]; ok {
+			copy := s
+			binding.Input = &copy
+		}
+		if c.ToAttached {
+			binding.Peer = id
+			d.generation++
+			binding.Generation = d.generation
+			if n.Kind == backend.Edit {
+				s, err := d.SnapshotInput(id)
+				if err != nil {
+					return backend.TreeResult{}, fmt.Errorf("Commit snapshot node=%d peer=%d before placement: %w", n.ID, id, err)
+				}
+				binding.Input = &s
+			}
+		}
+		tx.result.Bindings = append(tx.result.Bindings, binding)
+	}
+	if c.FromAttached {
+		root := c.Nodes[0].Peer
+		tx.mutated = true
+		if c.ToAttached {
+			if err := d.place(root, c.Target, c.Nodes[0].Bounds); err != nil {
+				return backend.TreeResult{}, err
+			}
+		} else {
+			d.api["ShowWindow"].Call(tx.oldRoot.hwnd, 0)
+		}
+	}
+	if c.ToAttached {
+		for _, id := range tx.created {
+			d.api["ShowWindow"].Call(d.peers[id].hwnd, 4)
+		} // SW_SHOWNOACTIVATE
+		if err := tx.restoreFocus(false); err != nil {
+			return backend.TreeResult{}, err
+		}
+	}
+	if c.FromAttached && c.ToAttached {
+		if err := tx.verifyRetainedInput("Commit after placement"); err != nil {
+			return backend.TreeResult{}, err
+		}
+	}
+	tx.committed = true
+	return tx.result, nil
+}
+func (d *driver) place(id, parent backend.Peer, b backend.Bounds) error {
+	p, err := d.get(id)
+	if err != nil {
+		return err
+	}
+	target, err := d.get(parent)
+	if err != nil {
+		return err
+	}
+	x, err := scale(b.X, d.dpi)
+	if err != nil {
+		return err
+	}
+	y, err := scale(b.Y, d.dpi)
+	if err != nil {
+		return err
+	}
+	if _, err = d.call("SetParent", p.hwnd, target.hwnd); err != nil {
+		return err
+	}
+	// SetParent uses window coordinates; reapply logical client coordinates.
+	if _, err = d.call("SetWindowPos", p.hwnd, 0, uintptr(x), uintptr(y), 0, 0, 0x1|0x4|0x10); err != nil {
+		return err
+	}
+	p.parent = parent
+	p.bounds = b
+	d.peers[id] = p
+	return nil
+}
+func (tx *treeTransaction) restoreFocus(rollback bool) error {
+	d := tx.d
+	// Attachment must not reacquire focus from a previously detached edit.
+	focus, _, _ := d.api["GetFocus"].Call()
+	if focus == tx.focus {
+		return nil
+	}
+	if !rollback && !tx.change.ToAttached {
+		return nil
+	}
+	if tx.focus != 0 {
+		valid, _, _ := d.api["IsWindow"].Call(tx.focus)
+		if valid == 0 {
+			return errors.New("win32: original focus target disappeared")
+		}
+	}
+	d.api["SetFocus"].Call(tx.focus)
+	focus, _, _ = d.api["GetFocus"].Call()
+	if focus != tx.focus {
+		return errors.New("win32: focus restoration failed")
+	}
+	return nil
+}
+
+// Existing HWNDs retain their selection, including its active endpoint. Reapplying
+// EM_SETSEL can destroy that direction, so restore focus first and certify the
+// original state by readback rather than trying to reconstruct it.
+func (tx *treeTransaction) verifyRetainedInput(phase string) error {
+	var errs []error
+	for id, want := range tx.input {
+		got, err := tx.d.SnapshotInput(id)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("%s retained input peer=%d readback: %w", phase, id, err))
+			continue
+		}
+		if got != want {
+			errs = append(errs, fmt.Errorf("%s retained input peer=%d mismatch: expected=%+v observed=%+v", phase, id, want, got))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func (tx *treeTransaction) Rollback() (err error) {
+	tx.committed = false
+	defer func() {
+		if err != nil {
+			tx.d.deliveryStopped = true
+		}
+	}()
+	d := tx.d
+	var errs []error
+	if len(tx.created) > 0 {
+		// Commit may already have shown new peers before focus verification
+		// failed. Keep the aborted subtree hidden even if its release fails.
+		d.api["ShowWindow"].Call(d.peers[tx.created[0]].hwnd, 0)
+	}
+	if tx.mutated {
+		root := tx.change.Nodes[0].Peer
+		if e := d.place(root, tx.oldRoot.parent, tx.oldRoot.bounds); e != nil {
+			errs = append(errs, e)
+		}
+		d.api["ShowWindow"].Call(tx.oldRoot.hwnd, 4)
+	}
+	if e := tx.restoreFocus(true); e != nil {
+		errs = append(errs, e)
+	}
+	if e := tx.verifyRetainedInput("Rollback after focus restoration"); e != nil {
+		errs = append(errs, e)
+	}
+	return errors.Join(errs...)
+}
+func (tx *treeTransaction) Cleanup() []backend.CleanupStep {
+	if len(tx.created) == 0 {
+		return nil
+	}
+	// Only this attempt's new HWNDs are released here. They cannot own the
+	// suspended application callback: they did not exist when it began, and
+	// the transaction fence prevented new application callbacks during creation.
+	// DestroyWindow cascades through the new subtree. Retained original peers
+	// still use the callback-guarded retirement path after successful detach.
+	root := tx.created[0]
+	return []backend.CleanupStep{{
+		Operation: fmt.Sprintf("win32 aborted tree peer %d", root),
+		Run:       func() error { return tx.d.Destroy(root) },
+	}}
+}
+func (tx *treeTransaction) Finish() {
+	d := tx.d
+	if tx.committed {
+		if tx.change.FromAttached && !tx.change.ToAttached {
+			for _, n := range tx.change.Nodes {
+				delete(d.byHWND, d.peers[n.Peer].hwnd)
+			}
+			d.retired = append(d.retired, tx.change.Nodes[0].Peer)
+		} else if tx.change.ToAttached {
+			for _, b := range tx.result.Bindings {
+				p := d.peers[b.Peer]
+				p.generation = b.Generation
+				d.peers[b.Peer] = p
+			}
+		}
+	} else {
+		for _, id := range tx.created {
+			if p, ok := d.peers[id]; ok {
+				delete(d.byHWND, p.hwnd)
+			}
+		}
+		// Failed releases remain owned by peers for the existing final Close.
+		// Do not enqueue them as successful detachments: an ordinary cleanup
+		// failure must not become a loop error or an immediate retry.
+	}
+	d.fenced = false
+}
+func (d *driver) subtree(id backend.Peer) []backend.Peer {
+	ids := []backend.Peer{id}
+	for i := 0; i < len(ids); i++ {
+		for child, p := range d.peers {
+			if p.parent == ids[i] {
+				ids = append(ids, child)
+			}
+		}
+	}
+	return ids
+}
+func (d *driver) releaseRetired() error {
+	if d.callbackDepth != 0 || d.fenced {
+		return nil
+	}
+	ids := d.retired
+	d.retired = nil
+	var errs []error
+	for _, id := range ids {
+		if _, ok := d.peers[id]; ok {
+			if err := d.Destroy(id); err != nil {
+				d.retired = append(d.retired, id)
+				errs = append(errs, fmt.Errorf("retired peer %d: %w", id, err))
+			}
+		}
+	}
+	return errors.Join(errs...)
+}

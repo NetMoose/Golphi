@@ -13,12 +13,16 @@ const (
 	Edit
 	Button
 	Label
+	Panel
 )
 
 // Bounds are logical client coordinates; conversion is backend-owned.
 type Bounds struct{ X, Y, Width, Height int }
 
 type Config struct {
+	// Input optionally supplies the logical Edit snapshot for Text. Creation
+	// preserves text but need not restore its positions and must not steal focus.
+	Input  *InputState
 	Kind   Kind
 	Parent Peer
 	Text   string
@@ -39,6 +43,9 @@ type Event struct {
 	Kind EventKind
 	Peer Peer
 	Text string
+	// Generation is a routing epoch for dynamic peers; zero is the legacy
+	// static path. Native signals retain the epoch captured at their origin.
+	Generation uint64
 }
 
 // Callbacks are retained from Init until Close. Failure is an internal,
@@ -58,6 +65,15 @@ type Callbacks struct {
 // guard every FFI entry using Capture and defer cleanup until Run has returned.
 // See docs/backend-contract.md for ownership, readiness, and teardown rules.
 type Driver interface {
+	// PrepareTree starts a delivery fence and owns hidden attempt resources.
+	// A non-nil transaction MUST be returned with any error needing rollback
+	// or cleanup. nil+error certifies no state change and no caller-owned work.
+	// Call ApplyTree to complete every returned transaction on the UI thread.
+	PrepareTree(TreeChange) (TreeTransaction, error)
+	// SnapshotInput reads effective native Edit state without changing it.
+	// PrepareTree must snapshot all affected input itself before mutation;
+	// this hook also lets core retain detached state without native types.
+	SnapshotInput(Peer) (InputState, error)
 	Init(Callbacks) error
 	Create(Config) (Peer, error)
 	Destroy(Peer) error

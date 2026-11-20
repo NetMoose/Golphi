@@ -1,0 +1,3 @@
+Diagnostic only: keyboard selection, d.place followed by one SetFocus; no EM_SETSEL.
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go test -c -buildvcs=false ./internal/backend/win32
+2e90f5f55b6dd6bdde4abee70ac8db32823cb86b228da9854f2ca1d9a861437f  golphi-win32.test.exe

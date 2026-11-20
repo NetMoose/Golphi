@@ -1,0 +1,10 @@
+=== RUN   TestNativeEditKeyboardSelectionProbe
+EDIT_KEYBOARD_PROBE instructions: click ABCDEF; End; Left once; Shift+Left THREE times; release Shift; F8. Wait for phase=later-dispatched-fence, then Shift+Right ONCE; release Shift; F9. Do not click or type into console. If focus is lost after move, record that fact; clicking Edit to continue contaminates continuation evidence.
+EDIT_KEYBOARD_PROBE phase=before hwnd=0x3001a peerHWND=0x3001a parent=0x50562 focus=0x3001a rangeUTF16=[2,5] caretOK=1 caretXY=(20,2) lowRaw=0x14 highRaw=0x30 lower=true text="ABCDEF" textErr=<nil>
+EDIT_KEYBOARD_PROBE phase=immediate hwnd=0x3001a peerHWND=0x3001a parent=0x50522 focus=0x50562 rangeUTF16=[2,5] caretOK=1 caretXY=(20,2) lowRaw=0x14 highRaw=0x30 lower=true text="ABCDEF" textErr=<nil>
+EDIT_KEYBOARD_PROBE phase=focus-message-0x8 hwnd=0x3001a peerHWND=0x3001a parent=0x50522 focus=0x50562 rangeUTF16=[2,5] caretOK=1 caretXY=(20,2) lowRaw=0x14 highRaw=0x30 lower=true text="ABCDEF" textErr=<nil>
+EDIT_KEYBOARD_PROBE phase=later-dispatched-fence hwnd=0x3001a peerHWND=0x3001a parent=0x50522 focus=0x50562 rangeUTF16=[2,5] caretOK=1 caretXY=(20,2) lowRaw=0x14 highRaw=0x30 lower=true text="ABCDEF" textErr=<nil>
+EDIT_KEYBOARD_SELECTION_PROBE_COMPLETE diagnostic_only=true production_acceptance=false continuation_performed=false reason=focus-lost-after-move
+--- PASS: TestNativeEditKeyboardSelectionProbe (15.31s)
+PASS
+EXIT_CODE=0

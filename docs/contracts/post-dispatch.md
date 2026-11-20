@@ -1,5 +1,13 @@
 # Передача задач Post на UI-поток Golphi
 
+Ниже сохранены исходные трассировки E0 и вопросы в их исторической формулировке.
+Текущая точка входа MVP — пакетная функция `ui.Post(fn) error`.
+[Текущая дельта Post](../../openspec/changes/implement-dynamic-component-tree/specs/post-dispatch/spec.md) сохраняет FIFO и
+отмену ещё не начатых задач при аварийном откате SetParent. Обычный отказ
+сохраняет приём задач. Вложенная диспетчеризация в незавершённом SetParent
+не запускает прикладной код. Реализация описана в [документации API](../components-mvp.md)
+и [документе о runtime](../dynamic-tree-runtime.md).
+
 Документ фиксирует целевой контракт из [дельты post-dispatch](../../openspec/changes/archive/2026-10-27-define-post-dispatch-contract/specs/post-dispatch/spec.md), [дельты application-failure](../../openspec/changes/archive/2026-10-27-define-post-dispatch-contract/specs/application-failure/spec.md) и [дизайна исходного изменения](../../openspec/changes/archive/2026-10-27-define-post-dispatch-contract/design.md), с расширением очистки по [текущей дельте post-dispatch](../../openspec/changes/archive/2026-10-27-define-cleanup-failure-contract/specs/post-dispatch/spec.md), [текущей дельте application-failure](../../openspec/changes/archive/2026-10-27-define-cleanup-failure-contract/specs/application-failure/spec.md) и [дизайну расширения](../../openspec/changes/archive/2026-10-27-define-cleanup-failure-contract/design.md). Это проектные трассировки для ручной проверки документации, а не подтверждение реализации runtime, очереди, backend или FFI. Они не закрывают E0 и не являются runtime-тестами T-01–T-09.
 
 ## Принятие и граница работы

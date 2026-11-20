@@ -18,7 +18,8 @@ func geometryPanic(t *testing.T, call func()) any {
 }
 
 func TestGeometryPreservesLogicalCoordinates(t *testing.T) {
-	owner, parent := NewForm(), NewForm()
+	owner := NewForm()
+	parent := owner
 	parent.SetClientSize(501, 303)
 	controls := []*control{&NewEdit(owner).control, &NewButton(owner).control, &NewLabel(owner).control}
 	for _, c := range controls {
@@ -58,16 +59,21 @@ func TestGeometryRejectsInvalidValuesWithoutMutation(t *testing.T) {
 }
 
 func TestGeometryFrozenWhenRunStarts(t *testing.T) {
-	for _, state := range []string{"component", "owner", "parent"} {
+	for _, state := range []string{"component", "owner", "parent", "ancestor"} {
 		t.Run(state, func(t *testing.T) {
-			f, parent := NewForm(), NewForm()
-			c := NewButton(f)
+			f := NewForm()
+			parent := NewPanel(f)
+			owner := NewPanel(f)
+			c := NewButton(owner)
 			_ = c.SetParent(parent)
+			_ = parent.SetParent(f)
 			c.SetBounds(1, 2, 3, 4)
 			switch state {
 			case "component":
 				c.started = true
 			case "owner":
+				owner.started = true
+			case "ancestor":
 				f.started = true
 			case "parent":
 				parent.started = true

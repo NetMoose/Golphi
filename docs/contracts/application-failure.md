@@ -1,5 +1,13 @@
 # Аварийная остановка приложения Golphi
 
+Ниже сохранены исходные трассировки паники обработчика и вопросы в их
+исторической формулировке. [Текущая дельта application-failure](../../openspec/changes/implement-dynamic-component-tree/specs/application-failure/spec.md)
+добавляет аварийный исход SetParent при невозможности восстановления. Run
+возвращает причину операции, ошибку восстановления и сбои очистки. Текущий
+callback может завершиться перед финальной очисткой. Обычный отказ с успешным
+восстановлением оставляет приложение в работе и возвращает диагностику из
+SetParent. Подробности и доказательства приведены в [диагностике отказов](../dynamic-tree-failures.md).
+
 Документ фиксирует целевой контракт из [спецификации application-failure](../../openspec/changes/archive/2026-10-27-define-destruction-and-event-failure-contract/specs/application-failure/spec.md) и [дизайна исходного изменения](../../openspec/changes/archive/2026-10-27-define-destruction-and-event-failure-contract/design.md), расширенный [дельтой application-failure](../../openspec/changes/archive/2026-10-27-define-post-dispatch-contract/specs/application-failure/spec.md), [контрактом post-dispatch](../../openspec/changes/archive/2026-10-27-define-post-dispatch-contract/specs/post-dispatch/spec.md) и [дизайном Post](../../openspec/changes/archive/2026-10-27-define-post-dispatch-contract/design.md). Политику сбоев очистки расширяют [текущая дельта application-failure](../../openspec/changes/archive/2026-10-27-define-cleanup-failure-contract/specs/application-failure/spec.md) и [дизайн очистки](../../openspec/changes/archive/2026-10-27-define-cleanup-failure-contract/design.md). Это проверяемое описание будущего поведения, а не подтверждение реализации runtime, FFI или конкретного backend. Оно не означает завершение E0.
 
 ## Граница сбоя и последовательность остановки
