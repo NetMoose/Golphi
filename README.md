@@ -25,7 +25,7 @@ CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags='-H windowsgui' -o dyn
 
 - [Экспериментальный API и ограничения](docs/components-mvp.md)
 - [Текущий срез, общий дизайн и открытые вопросы](docs/design.md)
-- [Активное изменение OpenSpec](openspec/changes/implement-dynamic-component-tree/proposal.md)
+- Динамическое дерево реализовано в [PR #11](https://github.com/NetMoose/Golphi/pull/11), слитом в `develop`. Правила перенесены в основные спецификации. [Архив изменения OpenSpec](openspec/changes/archive/2026-11-20-implement-dynamic-component-tree/proposal.md)
 - [Отчёт о принятом статическом MVP](docs/mvp-validation.md) и [его инструкция сборки](docs/mvp-build.md)
 
 Лицензия [MIT](LICENSE).

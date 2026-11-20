@@ -1,6 +1,6 @@
 # Проверка динамического дерева компонентов
 
-Изменение: [implement-dynamic-component-tree](../openspec/changes/implement-dynamic-component-tree/proposal.md). Реализация начата; результаты этого отчёта не означают завершения изменения.
+Реализация динамического дерева слита в `develop` в [PR #11](https://github.com/NetMoose/Golphi/pull/11). Дельты синхронизированы с основными спецификациями, исходное изменение [архивировано](../openspec/changes/archive/2026-11-20-implement-dynamic-component-tree/proposal.md). Ниже сохранены отчёты отдельных этапов реализации и приёмки.
 
 ## Итоговые проверки 5.4 — 2026-11-20
 
