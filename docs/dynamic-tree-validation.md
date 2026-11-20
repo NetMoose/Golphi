@@ -2,6 +2,13 @@
 
 Изменение: [implement-dynamic-component-tree](../openspec/changes/implement-dynamic-component-tree/proposal.md). Реализация начата; результаты этого отчёта не означают завершения изменения.
 
+## Сборки этапа 5.2 — 2026-11-20
+
+Оба примера, включая прежний `examples/hello`, собраны для Linux/Windows amd64
+с CGO_ENABLED=0 и недоступными CC/CXX. GUI/console подсистемы Windows проверены.
+Команды, версии, форматы и хеши — в [отчёте сборок](dynamic-tree-builds.md).
+Новых native-прогонов эта проверка не добавляет.
+
 ## Завершение этапа 4.4 — 2026-11-13
 
 Все четыре автоматические Windows-проверки исправления `3bfa412` прошли без
