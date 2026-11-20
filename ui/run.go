@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"sync/atomic"
 
@@ -153,6 +154,7 @@ type application struct {
 	components            map[backend.Peer]*component
 	bindingGenerations    map[backend.Peer]uint64
 	treeChanging          bool
+	pendingDestruction    bool
 	running, failed       bool
 	primary               *backend.Panic
 	failures              []error
@@ -206,6 +208,10 @@ func (r *application) destroyPeer(c *component) {
 	r.cleanupOp("destroy", func() error { return r.driver.Destroy(p) })
 }
 func (r *application) componentDestroyed(c *component) {
+	r.pendingDestruction = true
+	if c.parent != nil && r.peers[c] != 0 {
+		c.releaseParent = r.peers[c.parent.componentIdentity()]
+	}
 	if c == &r.form.component {
 		r.stop()
 		r.driver.Quit()
@@ -222,7 +228,7 @@ func (r *application) event(e backend.Event) {
 		return
 	}
 	c := r.components[e.Peer]
-	if c == nil || c.destroyed || r.bindingGenerations[e.Peer] != e.Generation {
+	if c == nil || c.Destroyed() || r.bindingGenerations[e.Peer] != e.Generation {
 		return
 	}
 	if p := backend.Capture(func() {
@@ -246,10 +252,22 @@ func (r *application) dispatch() *backend.Panic {
 		r.driver.Quit()
 		return p
 	}
-	for i := len(r.created) - 1; i >= 0; i-- {
-		c := r.created[i]
-		if c.destroyed {
-			r.destroyPeer(c)
+	if r.pendingDestruction {
+		r.pendingDestruction = false
+		for i := len(r.created) - 1; i >= 0; i-- {
+			if c := r.created[i]; c.Destroyed() {
+				r.destroyPeer(c)
+			}
+		}
+		if len(r.failures) == 0 {
+			r.created = slices.DeleteFunc(r.created, (*component).Destroyed)
+			r.participants = slices.DeleteFunc(r.participants, func(c *component) bool {
+				if !c.Destroyed() {
+					return false
+				}
+				c.runtime = nil
+				return true
+			})
 		}
 	}
 	if len(r.failures) > 0 {

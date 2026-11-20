@@ -58,15 +58,20 @@ func (r *application) setParent(root *component, parent Container) error {
 	for p, g := range r.bindingGenerations {
 		generations[p] = g
 	}
-	created := append([]*component(nil), r.created...)
-	known := make(map[*component]bool, len(created))
-	for _, c := range created {
-		known[c] = true
-	}
+	// Keep native ancestors before descendants even after moving an older
+	// subtree under a newer panel. Detached peers retire in the backend.
+	byID := make(map[backend.NodeID]*component, len(nodes))
 	for _, c := range nodes {
-		if !known[c] {
+		byID[backend.NodeID(c.order)] = c
+	}
+	created := make([]*component, 0, len(r.created)+len(nodes))
+	for _, c := range r.created {
+		if !c.Destroyed() && byID[backend.NodeID(c.order)] == nil {
 			created = append(created, c)
 		}
+	}
+	if change.ToAttached {
+		created = append(created, nodes...)
 	}
 	var children map[*component]struct{}
 	if parent != nil {
@@ -75,10 +80,6 @@ func (r *application) setParent(root *component, parent Container) error {
 			children[c] = struct{}{}
 		}
 		children[root] = struct{}{}
-	}
-	byID := make(map[backend.NodeID]*component, len(nodes))
-	for _, c := range nodes {
-		byID[backend.NodeID(c.order)] = c
 	}
 	r.treeChanging = true
 	defer func() { r.treeChanging = false }()
@@ -112,6 +113,23 @@ func (r *application) setParent(root *component, parent Container) error {
 			if change.ToAttached {
 				c.started = true
 			}
+		}
+		// Destroy severed logical edges, but these peers still follow their
+		// old native parents. A retained parent keeps its pending descendants.
+		// A replaced/detached parent retires them in the backend's cascade.
+		// The old ledger visits a pending parent before its pending children.
+		for _, c := range r.created {
+			if !c.Destroyed() {
+				continue
+			}
+			if components[c.releaseParent] != nil {
+				created = append(created, c)
+				continue
+			}
+			p := peers[c]
+			delete(peers, c)
+			delete(components, p)
+			delete(generations, p)
 		}
 		if root.parent != nil {
 			delete(root.parent.componentIdentity().children, root)

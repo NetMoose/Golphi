@@ -2,6 +2,13 @@
 
 Изменение: [implement-dynamic-component-tree](../openspec/changes/implement-dynamic-component-tree/proposal.md). Реализация начата; результаты этого отчёта не означают завершения изменения.
 
+## Итоговые проверки 5.4 — 2026-11-20
+
+Review всей ветки выявило и устранило ошибки порядка release, гонку destroyed guard
+и удержание уничтоженных компонентов. Регрессии и свежие Linux/native/race/vet
+проверки прошли. [Отчёт 5.4 и пакет для Windows](dynamic-tree-final-review.md).
+Задача 5.4 пока открыта до автоматического Windows-прогона исправленной сборки.
+
 ## Согласование документации 5.3 — 2026-11-20
 
 README, текущий дизайн, API/backend/event/error docs согласованы с реализацией.

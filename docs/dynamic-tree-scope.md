@@ -64,11 +64,11 @@
 
 | Требование | Покрытие |
 | --- | --- |
-| Detachment cancels pending text notifications | `TestTreeAttachmentTransitions`, `TestTreeReattachmentComparison` и core/native проверяют отмену после успешного detach и смену поколения. `TestTreeRecoverableCleanup` проверяет сохранение pending при обычном сбое переноса, Win32 retained-тест — обычный откат после неудачного detach со скрытием peer. Отдельный сквозной сценарий с pending и отказом именно `SetParent(nil)` не зафиксирован. [Переходы](../ui/tree_run_test.go), [инъекция в ядре](../ui/tree_recoverable_test.go), [core/native](#core-native), [Win32](#win32). |
+| Detachment cancels pending text notifications | `TestTreeAttachmentTransitions`, `TestTreeReattachmentComparison` и core/native проверяют отмену после успешного detach и смену поколения. `TestTreeRecoverableCleanup` проверяет сохранение pending при обычном сбое переноса, Win32 retained-тест — обычный откат после неудачного detach со скрытием peer. `TestTreeFailedDetachmentPreservesPendingChange` изолированно проверяет поздний отказ SetParent(nil), восстановление прежнего ввода, pending/base/generation и однократную тихую доставку; [тест](../ui/tree_pending_failure_test.go). [Переходы](../ui/tree_run_test.go), [инъекция в ядре](../ui/tree_recoverable_test.go), [core/native](#core-native), [Win32](#win32). |
 | Attachment delivers no preparation events | `TestTreeMaterializationRollbackRetry` проверяет тишину при подготовке, на сбое и внутри незавершённой операции, затем обычную доставку после успеха. Core/native проверяет тишину успешной материализации и настоящий последующий Change. [Ядро](../ui/tree_run_test.go), [core/native](#core-native). |
 | Reattachment starts a fresh comparison period | `TestTreeReattachmentComparison` и core/native проверяют новую базу и отложенный повтор при возврате к тексту входа в callback, тишину без дальнейших изменений и переход через предка. [Ядро](../ui/tree_run_test.go), [core/native](#core-native). |
 | Direct attached transfer preserves notification state | `TestTreeAttachmentTransitions` и core/native сохраняют pending, базу и поколение двух потомков, доставляют повтор после переноса и подавляют технические сигналы. Обычная поздняя ошибка переноса покрыта инъекцией в ядре. [Ядро](../ui/tree_run_test.go), [core/native](#core-native). |
-| Transfer to detached container counts as detachment | `TestTreeAttachmentTransitions` использует неприсоединённую Panel как ненулевой Parent и проверяет отмену у потомков, тишину и сохранение внутреннего дерева. Сохранение pending при обычном отказе проверено на прямом переносе. Отдельный отказ переноса именно в неприсоединённую Panel с ожидающим OnChange не зафиксирован. [Ядро](../ui/tree_run_test.go). |
+| Transfer to detached container counts as detachment | `TestTreeAttachmentTransitions` использует неприсоединённую Panel как ненулевой Parent и проверяет отмену у потомков, тишину и сохранение внутреннего дерева. Сохранение pending при обычном отказе проверено на прямом переносе. `TestTreeFailedMoveToDetachedPanelPreservesPendingChange` изолированно проверяет этот отказ с pending, восстановление и последующую доставку; [тест](../ui/tree_pending_failure_test.go). [Ядро](../ui/tree_run_test.go). |
 
 ### [Application failure](../openspec/changes/implement-dynamic-component-tree/specs/application-failure/spec.md), [native UI runtime](../openspec/changes/implement-dynamic-component-tree/specs/native-ui-runtime/spec.md) и [Post dispatch](../openspec/changes/implement-dynamic-component-tree/specs/post-dispatch/spec.md)
 
@@ -156,3 +156,16 @@ peer проверяется отдельно тестами адаптеров. 
 контракта, диагностику, зависимую очистку, retry и сочетания после фатального
 отказа. Для произвольных клавиатурных сочетаний, bidi/IME и внешнего вида Win32
 новых критериев приёмки нет. Оформление Win32 ведётся как WIN-01. [Backlog](backlog.md).
+
+## Дополнения итогового review 5.4
+
+`TestMovedPeerRelease` и `TestPendingChildRelease` проверяют native-каскад через
+fake, включая ребёнка, логически уничтоженного перед переносом/отсоединением
+предка в том же callback. Core/native сценарий расширен тремя подслучаями;
+GTK-прогон новой версии прошёл, Windows-прогон ожидается. `TestDestroyWorkerGuard`
+проверяет отказ worker setters при одновременном UI Destroy под race detector;
+атомарный destroyed latch не расширяет потоковый контракт остальных API.
+`TestTransientLifetime` проверяет ограниченность runtime-реестров при повторном
+создании/уничтожении, включая never-attached детей. [Регрессии](../ui/tree_lifetime_test.go).
+
+Результаты и оставшееся условие приёмки — в [отчёте 5.4](dynamic-tree-final-review.md).

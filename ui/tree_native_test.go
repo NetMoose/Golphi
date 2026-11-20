@@ -116,9 +116,12 @@ func nativeTreeScenario() {
 					require(err == nil && actual == "A")
 					// Ownership and visual-parent subtrees overlap. Destruction inside a real
 					// native Change callback must stay logical until that callback unwinds.
-					live := []backend.Peer{app.peers[&root.component], app.peers[&inner.component], app.peers[&a.component], app.peers[&b.component]}
+					outer := NewPanel(f)
+					require(outer.SetParent(f) == nil && root.SetParent(outer) == nil)
+					live := []backend.Peer{app.peers[&outer.component], app.peers[&root.component], app.peers[&inner.component], app.peers[&a.component], app.peers[&b.component]}
 					a.SetOnChange(func() {
 						require(d.callbackDepth > 0)
+						outer.Destroy()
 						root.Destroy()
 						inner.Destroy()
 						a.Destroy()
@@ -169,17 +172,70 @@ func nativeTreeScenario() {
 	fmt.Printf("native tree PASS: OnChange=%d/%d nativeChanges=%d coreReleased=%d; old-epoch events=injected\n", ac, bc, d.changes, len(d.destroyCalls))
 }
 
+func init() {
+	for _, mode := range []string{"move", "detach"} {
+		extraScenarios["native-pending-child-"+mode] = func() { nativePendingChild(mode) }
+	}
+}
+
+func nativePendingChild(mode string) {
+	f := NewForm()
+	ancestor := NewPanel(f)
+	child := NewEdit(f)
+	// A live Edit makes GTK recreate the moved subtree while Win32 retains it.
+	sibling := NewEdit(f)
+	require(ancestor.SetParent(f) == nil && child.SetParent(ancestor) == nil && sibling.SetParent(ancestor) == nil)
+	d := &nativeObserver{Driver: newDriver(), destroyed: make(map[backend.Peer]bool), destroyCalls: make(map[backend.Peer]int)}
+	newDriver = func() backend.Driver { return d }
+	var destination Container
+	calls := 0
+	child.SetOnChange(func() {
+		calls++
+		require(d.callbackDepth > 0)
+		child.Destroy()
+		require(ancestor.SetParent(destination) == nil)
+		ancestor.Destroy()
+		require(len(d.destroyCalls) == 0)
+	})
+	d.start = func() {
+		require(Post(func() {
+			if mode == "move" {
+				panel := NewPanel(f)
+				require(panel.SetParent(f) == nil)
+				destination = panel
+			}
+			app := f.runtime.(*application)
+			peer := app.peers[&child.component]
+			require(d.Driver.SetText(peer, "destroy child") == nil)
+			require(calls == 1 && child.Destroyed() && ancestor.Destroyed())
+			// Close in the same outer turn; backend retirement may precede core cleanup.
+			f.Destroy()
+		}) == nil)
+	}
+	if err := f.Run(); err != nil {
+		panic(err)
+	}
+	require(calls == 1 && len(d.destroyCalls) > 0)
+	for _, count := range d.destroyCalls {
+		require(count == 1)
+	}
+}
+
 func TestNativeDynamicTreeIntegration(t *testing.T) {
 	if os.Getenv("GOLPHI_NATIVE_TREE") != "1" {
 		t.Skip("set GOLPHI_NATIVE_TREE=1 on a graphical desktop")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, os.Args[0])
-	cmd.Env = append(os.Environ(), "GOLPHI_RUN_TEST=native-tree")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("native tree: context=%v process=%v\n%s", ctx.Err(), err, out)
+	for _, scenario := range []string{"native-tree", "native-pending-child-move", "native-pending-child-detach"} {
+		t.Run(scenario, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+			defer cancel()
+			cmd := exec.CommandContext(ctx, os.Args[0])
+			cmd.Env = append(os.Environ(), "GOLPHI_RUN_TEST="+scenario)
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("native tree: context=%v process=%v\n%s", ctx.Err(), err, out)
+			}
+			t.Log(string(out))
+		})
 	}
-	t.Log(string(out))
 }

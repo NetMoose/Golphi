@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"reflect"
+	"sync/atomic"
 
 	"github.com/NetMoose/Golphi/internal/backend"
 	"github.com/NetMoose/Golphi/internal/uithread"
@@ -55,11 +56,13 @@ type component struct {
 	text     string
 	// savedInput belongs to logical preparation/detachment, never live peers.
 	savedInput *backend.InputState
+	// Native parent at logical destruction, while the peer awaits callback-safe release.
+	releaseParent backend.Peer
 	eventState
 	bounds backend.Bounds
 	// started is latched by Run before native initialization for every participant.
 	started   bool
-	destroyed bool
+	destroyed atomic.Bool
 	// form is set only for forms; graph edges refer to component identities.
 	form *Form
 }
@@ -143,7 +146,7 @@ func (c *component) ownerRoot() *Form {
 }
 
 func (c *component) guardAlive() {
-	if c.destroyed {
+	if c.Destroyed() {
 		panic("ui: operation on destroyed component")
 	}
 }
@@ -177,7 +180,7 @@ func (c *visual) SetParent(parent Container) error {
 	if parent != nil && reflect.ValueOf(parent).IsNil() {
 		parent = nil
 	}
-	if parent != nil && parent.componentIdentity().destroyed {
+	if parent != nil && parent.componentIdentity().Destroyed() {
 		return errors.New("ui: parent is destroyed")
 	}
 	if parent != nil {
@@ -225,15 +228,15 @@ func (c *visual) SetParent(parent Container) error {
 }
 
 // Destroyed безопасен после Destroy и возвращает логическое состояние.
-func (c *component) Destroyed() bool { return c.destroyed }
+func (c *component) Destroyed() bool { return c.destroyed.Load() }
 
 // Destroy немедленно уничтожает компонент, его owned-компоненты и визуальных
 // потомков. Повторный вызов безопасен, включая пересечения двух деревьев.
 func (c *component) Destroy() {
-	if c.destroyed {
+	if c.Destroyed() {
 		return
 	}
-	c.destroyed = true
+	c.destroyed.Store(true)
 	c.cancelTextNotification()
 	if r, ok := c.runtime.(interface{ componentDestroyed(*component) }); ok {
 		r.componentDestroyed(c)

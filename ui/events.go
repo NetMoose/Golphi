@@ -39,7 +39,7 @@ func (e *Edit) SetOnChange(handler func()) {
 }
 
 func (c *component) eventsEnabled() bool {
-	return !c.destroyed && c.runtime != nil && c.runtime.eventsRunning() &&
+	return !c.Destroyed() && c.runtime != nil && c.runtime.eventsRunning() &&
 		c.attached()
 }
 func (c *component) setText(text string) {
@@ -63,7 +63,7 @@ func (c *component) setText(text string) {
 // nativeText accepts copied native input on the UI thread. Runtime routes Change
 // by peer and must suppress callbacks before readiness and after stop/failure.
 func (c *component) nativeText(text string) {
-	if c.destroyed || c.writing {
+	if c.Destroyed() || c.writing {
 		return
 	}
 	c.applyText(c.text, text)
