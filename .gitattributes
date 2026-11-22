@@ -1,0 +1,4 @@
+# Keep manifest bytes reproducible when regenerating resources on Windows.
+examples/*/app.manifest.xml text eol=lf
+examples/*/winres.json text eol=lf
+examples/*/rsrc_windows_amd64.syso binary
