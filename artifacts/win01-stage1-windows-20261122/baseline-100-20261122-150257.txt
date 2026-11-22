@@ -1,0 +1,16 @@
+OS=Майкрософт Windows 11 Pro; Version=10.0.26100; Build=26100; Architecture=64-разрядная
+PowerShell=5.1.26100.7462; RequestedScale=100; EXE=C:\Users\lynxh\Downloads\golphi\artifacts\win01-baseline\hello-baseline.exe
+SHA256=A98742A451D0FAFABBF4F7EA9D1E7478E37134134DF0AB45A2ACEF4704635553
+WIN-01 baseline; build-only, Windows native acceptance PENDING
+SourceCommit=acc3afe51784cd1f75a4de248260ba442504aad1
+DevelopBase=5cfdcb256e12a589e42f5ad1e5605e3c6cc8bf85
+Toolchain=go1.26.5 linux/amd64
+Target=windows/amd64 CGO_ENABLED=0
+Command=go build -trimpath -buildvcs=false -ldflags="-H windowsgui" -o artifacts/win01-baseline/hello-baseline.exe ./examples/hello
+Manifest=none; original backend, before WIN-01 font changes
+SHA256=a98742a451d0fafabbf4f7ea9d1e7478e37134134df0ab45a2acef4704635553
+WindowDPI=96; ExpectedDPI=96
+Screenshot=C:\Users\lynxh\Downloads\golphi\artifacts\win01-baseline-evidence\baseline-100-20261122-150257.png; WindowRect=0,0,416,219
+ManualBaseline=PASS
+ExitCode=0
+BASELINE_CAPTURE=PASS (не является приёмкой нового шрифта/visual styles)

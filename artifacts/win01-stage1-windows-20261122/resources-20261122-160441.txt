@@ -1,0 +1,141 @@
+OS=Майкрософт Windows 11 Pro; Build=26100; Architecture=64-разрядная; PowerShell=5.1.26100.7462
+WIN-01 stage 1: build/resource evidence, native Windows PENDING
+ImplementationCommit=b782df356a5749c91714247879f244d49f76af25
+BaselineCommit=acc3afe51784cd1f75a4de248260ba442504aad1
+Host=Linux amd64; Go=1.26.5; CGO_ENABLED=0
+Tool=github.com/tc-hib/go-winres v0.3.3
+Windows generation/build/baseline captures still required; backend font unchanged.
+SHA256 a98742a451d0fafabbf4f7ea9d1e7478e37134134df0ab45a2acef4704635553 artifacts/win01-baseline/hello-baseline.exe
+SHA256 a806842c4a9d98ec76146be5f93639180a35ba792b41990cefe52bb7b26e9a5f examples/hello/app.manifest.xml
+SHA256 ab2527b9b038754046dd3651c773f5267a40f7bebb30911a263e493ca4ce6410 examples/hello/rsrc_windows_amd64.syso
+SHA256 47d95b2e61718bfff87ed0aec6ea05a7d4091a0d4eeb8e9906e1fe10072b0802 examples/dynamic-tree/app.manifest.xml
+SHA256 4ec5c3819646dd0e782b773aeab7953033e0e46fee34a721c6fcc5c837f78929 examples/dynamic-tree/rsrc_windows_amd64.syso
+SHA256 95ede91189f93add54820e79c25e1ae1515c68502adf5f84d151fe6e28c2828a tools/winres/go.mod
+SHA256 9078e4a3851010239b8b9e871e4f85d14083a416eccd81701422ab3141aaaf65 tools/winres/go.sum
+
+HandoffRevision=2 (post-binding script path initialization)
+HandoffFixBase=732266501eb026532be9a430ea10c68e85676035
+WindowsPowerShell51Rerun=PENDING
+SHA256 4abcae5540ea8aad2589b9f6260c3e77c480d5e11f4ab94f2a0130c96bc9e37c scripts/capture-win01-baseline-windows.ps1
+SHA256 35683abf42a468d91099ef4f13f23e847711db923de63eb3a6ed750a4955a1f5 scripts/verify-win01-resources-windows.ps1
+go version
+go version go1.26.5 windows/amd64
+go env GOOS GOARCH CGO_ENABLED GOTOOLCHAIN CC CXX
+windows
+amd64
+0
+local
+golphi-no-c-compiler
+golphi-no-cxx-compiler
+go -C C:\Users\lynxh\Downloads\golphi\tools\winres list -m all
+github.com/NetMoose/Golphi/tools/winres
+github.com/BurntSushi/toml v1.3.2
+github.com/cpuguy83/go-md2man/v2 v2.0.2
+github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
+github.com/russross/blackfriday/v2 v2.1.0
+github.com/tc-hib/go-winres v0.3.3
+github.com/tc-hib/winres v0.2.1
+github.com/urfave/cli/v2 v2.25.7
+github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673
+github.com/yuin/goldmark v1.4.13
+golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+golang.org/x/image v0.12.0
+golang.org/x/mod v0.8.0
+golang.org/x/net v0.6.0
+golang.org/x/sync v0.1.0
+golang.org/x/sys v0.5.0
+golang.org/x/term v0.5.0
+golang.org/x/text v0.13.0
+golang.org/x/tools v0.6.0
+golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7
+gopkg.in/yaml.v3 v3.0.1
+ShippedResource=hello SHA256=AB2527B9B038754046DD3651C773F5267A40F7BEBB30911A263E493CA4CE6410
+go -C C:\Users\lynxh\Downloads\golphi\tools\winres tool go-winres make --in C:\Users\lynxh\Downloads\golphi\examples\hello\winres.json --out C:\Users\lynxh\Downloads\golphi\artifacts\win01-resource-evidence\hello-resource-20261122-160441\rsrc --arch amd64
+go: downloading github.com/tc-hib/go-winres v0.3.3
+go: downloading github.com/urfave/cli/v2 v2.25.7
+go: downloading github.com/tc-hib/winres v0.2.1
+go: downloading golang.org/x/image v0.12.0
+go: downloading github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
+go: downloading github.com/cpuguy83/go-md2man/v2 v2.0.2
+go: downloading github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673
+go: downloading github.com/russross/blackfriday/v2 v2.1.0
+REGENERATE_hello=PASS; SHA256=AB2527B9B038754046DD3651C773F5267A40F7BEBB30911A263E493CA4CE6410
+go -C C:\Users\lynxh\Downloads\golphi build -trimpath -buildvcs=false -ldflags=-H windowsgui -o C:\Users\lynxh\Downloads\golphi\artifacts\win01-resource-evidence\hello-windows-amd64.exe ./examples/hello
+EXE=C:\Users\lynxh\Downloads\golphi\artifacts\win01-resource-evidence\hello-windows-amd64.exe SHA256=46830F787516106378660CCA220303CB8E5C4FFCA76165C152E5661504021465
+go version -m C:\Users\lynxh\Downloads\golphi\artifacts\win01-resource-evidence\hello-windows-amd64.exe
+C:\Users\lynxh\Downloads\golphi\artifacts\win01-resource-evidence\hello-windows-amd64.exe: go1.26.5
+	path	github.com/NetMoose/Golphi/examples/hello
+	mod	github.com/NetMoose/Golphi	(devel)
+	build	-buildmode=exe
+	build	-compiler=gc
+	build	-trimpath=true
+	build	CGO_ENABLED=0
+	build	GOARCH=amd64
+	build	GOOS=windows
+	build	GOAMD64=v1
+go -C C:\Users\lynxh\Downloads\golphi\tools\winres tool go-winres extract --xml-manifest --dir C:\Users\lynxh\Downloads\golphi\artifacts\win01-resource-evidence\hello-manifest-20261122-160441 C:\Users\lynxh\Downloads\golphi\artifacts\win01-resource-evidence\hello-windows-amd64.exe
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <assemblyIdentity type="win32" name="Golphi.Examples.hello" version="1.0.0.0" processorArchitecture="amd64"/>
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0" processorArchitecture="*" publicKeyToken="6595b64144ccf1df" language="*"/>
+    </dependentAssembly>
+  </dependency>
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <application xmlns="urn:schemas-microsoft-com:asm.v3">
+    <windowsSettings>
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true</dpiAware>
+      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">system</dpiAwareness>
+    </windowsSettings>
+  </application>
+</assembly>
+EMBEDDED_XML_hello=PASS
+ShippedResource=dynamic-tree SHA256=4EC5C3819646DD0E782B773AEAB7953033E0E46FEE34A721C6FCC5C837F78929
+go -C C:\Users\lynxh\Downloads\golphi\tools\winres tool go-winres make --in C:\Users\lynxh\Downloads\golphi\examples\dynamic-tree\winres.json --out C:\Users\lynxh\Downloads\golphi\artifacts\win01-resource-evidence\dynamic-tree-resource-20261122-160441\rsrc --arch amd64
+REGENERATE_dynamic-tree=PASS; SHA256=4EC5C3819646DD0E782B773AEAB7953033E0E46FEE34A721C6FCC5C837F78929
+go -C C:\Users\lynxh\Downloads\golphi build -trimpath -buildvcs=false -ldflags=-H windowsgui -o C:\Users\lynxh\Downloads\golphi\artifacts\win01-resource-evidence\dynamic-tree-windows-amd64.exe ./examples/dynamic-tree
+EXE=C:\Users\lynxh\Downloads\golphi\artifacts\win01-resource-evidence\dynamic-tree-windows-amd64.exe SHA256=94F11E317397A5B2F74C0400CD1B2AD93033AE06A3DE08F952BD80A3E1B1A1F6
+go version -m C:\Users\lynxh\Downloads\golphi\artifacts\win01-resource-evidence\dynamic-tree-windows-amd64.exe
+C:\Users\lynxh\Downloads\golphi\artifacts\win01-resource-evidence\dynamic-tree-windows-amd64.exe: go1.26.5
+	path	github.com/NetMoose/Golphi/examples/dynamic-tree
+	mod	github.com/NetMoose/Golphi	(devel)
+	build	-buildmode=exe
+	build	-compiler=gc
+	build	-trimpath=true
+	build	CGO_ENABLED=0
+	build	GOARCH=amd64
+	build	GOOS=windows
+	build	GOAMD64=v1
+go -C C:\Users\lynxh\Downloads\golphi\tools\winres tool go-winres extract --xml-manifest --dir C:\Users\lynxh\Downloads\golphi\artifacts\win01-resource-evidence\dynamic-tree-manifest-20261122-160441 C:\Users\lynxh\Downloads\golphi\artifacts\win01-resource-evidence\dynamic-tree-windows-amd64.exe
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <assemblyIdentity type="win32" name="Golphi.Examples.dynamic-tree" version="1.0.0.0" processorArchitecture="amd64"/>
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0" processorArchitecture="*" publicKeyToken="6595b64144ccf1df" language="*"/>
+    </dependentAssembly>
+  </dependency>
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <application xmlns="urn:schemas-microsoft-com:asm.v3">
+    <windowsSettings>
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true</dpiAware>
+      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">system</dpiAwareness>
+    </windowsSettings>
+  </application>
+</assembly>
+EMBEDDED_XML_dynamic-tree=PASS
+RESOURCE_BUILD=PASS; нативное оформление ещё требует запуска EXE и отдельного результата.
+ManualThemedLaunch=PASS
