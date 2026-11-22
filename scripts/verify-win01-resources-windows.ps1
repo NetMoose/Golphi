@@ -1,8 +1,12 @@
 ﻿# Windows PowerShell 5.1. UTF-8 with BOM.
 [CmdletBinding()]
-param([string]$OutputDirectory = (Join-Path $PSScriptRoot '../artifacts/win01-resource-evidence'))
+param([string]$OutputDirectory)
 $ErrorActionPreference = 'Stop'
-$root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
+$scriptDirectory = Split-Path -LiteralPath $MyInvocation.MyCommand.Path
+$root = (Resolve-Path -LiteralPath (Join-Path $scriptDirectory '..')).Path
+if (!$PSBoundParameters.ContainsKey('OutputDirectory')) {
+    $OutputDirectory = Join-Path $scriptDirectory '../artifacts/win01-resource-evidence'
+}
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 $OutputDirectory = (Resolve-Path -LiteralPath $OutputDirectory).Path
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'

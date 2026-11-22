@@ -2,10 +2,17 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)][ValidateSet(100,150)][int]$Scale,
-    [string]$Exe = (Join-Path $PSScriptRoot '../artifacts/win01-baseline/hello-baseline.exe'),
-    [string]$OutputDirectory = (Join-Path $PSScriptRoot '../artifacts/win01-baseline-evidence')
+    [string]$Exe,
+    [string]$OutputDirectory
 )
 $ErrorActionPreference = 'Stop'
+$scriptDirectory = Split-Path -LiteralPath $MyInvocation.MyCommand.Path
+if (!$PSBoundParameters.ContainsKey('Exe')) {
+    $Exe = Join-Path $scriptDirectory '../artifacts/win01-baseline/hello-baseline.exe'
+}
+if (!$PSBoundParameters.ContainsKey('OutputDirectory')) {
+    $OutputDirectory = Join-Path $scriptDirectory '../artifacts/win01-baseline-evidence'
+}
 if (![Environment]::Is64BitProcess) { throw 'Нужен 64-битный PowerShell.' }
 $Exe = (Resolve-Path -LiteralPath $Exe).Path
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
