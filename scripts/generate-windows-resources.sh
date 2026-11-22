@@ -7,7 +7,7 @@ GOOS=$(go env GOHOSTOS)
 GOARCH=$(go env GOHOSTARCH)
 export GOOS GOARCH
 
-for example in hello dynamic-tree; do
+for example in hello dynamic-tree windows-appearance; do
     app="$root/examples/$example"
     go -C "$root/tools/winres" tool go-winres make \
         --in "$app/winres.json" --out "$app/rsrc" --arch amd64

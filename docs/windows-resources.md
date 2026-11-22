@@ -7,7 +7,8 @@
 
 ## Примеры Golphi
 
-В пакетах `examples/hello` и `examples/dynamic-tree` лежат исходный
+В пакетах `examples/hello`, `examples/dynamic-tree` и
+`examples/windows-appearance` лежат исходный
 `app.manifest.xml`, конфигурация `winres.json` и подготовленный
 `rsrc_windows_amd64.syso`. Суффикс `_windows_amd64.syso` ограничивает
 включение ресурса сборками Windows/amd64. Обычный `go build` использует
@@ -24,8 +25,9 @@
 ### Linux
 
 Из корня Golphi запустите генератор после изменения XML или JSON.
-Команда сборки показана для hello. Для второго примера используйте
-`./examples/dynamic-tree` и имя `dynamic-tree.exe`.
+Команда сборки показана для hello. Для других примеров используйте
+`./examples/dynamic-tree` / `dynamic-tree.exe` или
+`./examples/windows-appearance` / `windows-appearance.exe`.
 
 ```sh
 ./scripts/generate-windows-resources.sh
@@ -35,7 +37,7 @@ CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-H windowsgui" -o hel
 ### Windows PowerShell
 
 Из корня Golphi в новой сессии PowerShell выполните команды ниже. Они
-заново генерируют ресурсы и собирают оба примера.
+заново генерируют ресурсы и собирают три примера.
 
 ```powershell
 $env:CGO_ENABLED = '0'
@@ -44,7 +46,7 @@ $env:GOARCH = 'amd64'
 $env:GOWORK = 'off'
 $env:GOFLAGS = '-mod=readonly'
 
-foreach ($example in 'hello', 'dynamic-tree') {
+foreach ($example in 'hello', 'dynamic-tree', 'windows-appearance') {
     go -C tools/winres tool go-winres make --in "../../examples/$example/winres.json" --out "../../examples/$example/rsrc" --arch amd64
     if ($LASTEXITCODE -ne 0) { throw "go-winres make failed for $example" }
 
