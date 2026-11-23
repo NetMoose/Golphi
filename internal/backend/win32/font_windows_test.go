@@ -369,8 +369,10 @@ func TestWindowsFontVisualStyles(t *testing.T) {
 	switch expect := os.Getenv("GOLPHI_WIN01_EXPECT_STYLES"); expect {
 	case "":
 	case "0":
-		if app != 0 {
-			t.Fatal("expected classic style")
+		// The application can report active visual styles even when this
+		// native Button has no theme attached.
+		if buttonTheme != 0 {
+			t.Fatal("expected a classic native Button without a theme handle")
 		}
 	case "1":
 		if app == 0 || active == 0 || buttonTheme == 0 {

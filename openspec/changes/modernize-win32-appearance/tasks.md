@@ -45,4 +45,6 @@
 
 Передача шрифтового этапа (2026-11-22): подготовлены пакет и русские инструкции 3.3, выполнены review/сборки/проверка ссылок и commit/push 3.4. Metadata — artifacts/win01-font/build.txt, пакет — artifacts/golphi-win01-font-windows.zip. Полноценные Windows-результаты Font/readback/fault/clipping/retained-transfer ожидаются; 2.1–2.5, 3.2 и итоговые 4.x не закрыты.
 
-Повторная передача: исправлен синтаксис PowerShell. Для прогона использовать компактный пакет artifacts/golphi-win01-font-windows-v2.zip по инструкции docs/windows-font-verification.md.
+Повторная передача v2: исправлен синтаксис PowerShell, пакет сокращён до файлов текущего прогона.
+
+Прогон v2 остановился на проверке классической кнопки при 96 DPI. Для повторной проверки использовать artifacts/golphi-win01-font-windows-v3.zip с исправленным критерием. Задачи 2.x, 3.2 и 4.x ожидают оставшиеся результаты.
