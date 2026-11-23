@@ -1,0 +1,24 @@
+=== RUN   TestStartupFailure
+=== RUN   TestStartupFailure/missing-library
+=== RUN   TestStartupFailure/missing-symbol
+=== RUN   TestStartupFailure/backend-init
+=== RUN   TestStartupFailure/create
+--- PASS: TestStartupFailure (0.24s)
+    --- PASS: TestStartupFailure/missing-library (0.21s)
+    --- PASS: TestStartupFailure/missing-symbol (0.01s)
+    --- PASS: TestStartupFailure/backend-init (0.01s)
+    --- PASS: TestStartupFailure/create (0.01s)
+=== RUN   TestNativeDynamicTreeIntegration
+=== RUN   TestNativeDynamicTreeIntegration/native-tree
+    tree_native_test.go:238: native tree PASS: OnChange=4/2 nativeChanges=8 coreReleased=8; old-epoch events=injected
+
+=== RUN   TestNativeDynamicTreeIntegration/native-pending-child-move
+    tree_native_test.go:238:
+=== RUN   TestNativeDynamicTreeIntegration/native-pending-child-detach
+    tree_native_test.go:238:
+--- PASS: TestNativeDynamicTreeIntegration (0.22s)
+    --- PASS: TestNativeDynamicTreeIntegration/native-tree (0.14s)
+    --- PASS: TestNativeDynamicTreeIntegration/native-pending-child-move (0.05s)
+    --- PASS: TestNativeDynamicTreeIntegration/native-pending-child-detach (0.03s)
+PASS
+EXIT_CODE=0

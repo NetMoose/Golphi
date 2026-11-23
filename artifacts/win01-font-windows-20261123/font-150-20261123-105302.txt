@@ -1,0 +1,40 @@
+OS=Майкрософт Windows 11 Pro; Build=26200; Architecture=64-разрядная; PowerShell=5.1.26100.9711
+RequestedScale=150; ExpectedDPI=144
+WIN-01 font/appearance handoff; native Windows pending
+SourceCommit=cab4d6dae95af7ca162317e3aa7fbb8194fad8a5
+Win32TestRevision=5f4c5d7c7093eb2792203f7129c2ab6900cab3c6d1b7477e22582a0a75651b17 (internal/backend/win32/font_windows_test.go, SHA256; corrected classic Button theme assertion)
+BaselineReference=artifacts/win01-stage1-windows-20261122
+Host=Linux amd64; Go=1.26.5; CGO_ENABLED=0
+GoWinres=github.com/tc-hib/go-winres v0.3.3
+BuildGUI=GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -buildvcs=false -ldflags="-H windowsgui" ./examples/<name>
+BuildTests=GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go test -c ./internal/backend/win32 (or ./ui)
+ThemedTests=copy classic EXE; pinned go-winres patch --in examples/hello/winres.json --no-backup <test.exe>
+Checked: GUI/console subsystem, manifest absence/presence, single RT_MANIFEST #1/0409 and raw XML identity
+WindowsFONT/style/runtime/clipping/manual acceptance=PENDING
+SHA256 882163138c3f634b3b2d1d03c2c1275085ee0cf343ffcf03a7b6cc293d24149a dynamic-tree.exe
+SHA256 a1f1d708cb0a05cdc49a3b7a6faf3b3c7d923cd82571ab75eb54f8ee88348ae9 golphi-ui-themed.test.exe
+SHA256 9067dbd21c24bfacbec5f144d95be15e3c202e599d67a24a9794cc3047860dbe golphi-win32-classic.test.exe
+SHA256 5e588fd06a2371ee6f43e8ec4ac31f320100c6abcdda4204a7f9dd33ef75eebb golphi-win32-themed.test.exe
+SHA256 399a4a81dd88f26f9de56757b60e43b78b05c42c6bae2426581b43832c41b3ee hello.exe
+SHA256 213add643e35f9debde502b912e864b441ef6cf27fdd90c14c617d0178cf7492 windows-appearance.exe
+SHA256 e02ec199ffe2fa54f74d57440ece7427346f1f01633b9f5f86133138ac1737a3 scripts/verify-win01-font-windows.ps1
+SHA256 5be027a4d2c34980226d4541bb012ddffd806cb1e2a5965352015859a6c80808 scripts/capture-win01-window-windows.ps1
+ARTIFACT=<test-root>\artifacts\win01-font\golphi-win32-classic.test.exe; SHA256=9067DBD21C24BFACBEC5F144D95BE15E3C202E599D67A24A9794CC3047860DBE
+RUN=golphi-win32-classic.test.exe; Regex=^TestWindowsFont
+font-classic=PASS; LOG=<test-root>\artifacts\win01-font-evidence\font-classic-150-20261123-105302.log
+ARTIFACT=<test-root>\artifacts\win01-font\golphi-win32-themed.test.exe; SHA256=5E588FD06A2371EE6F43E8EC4AC31F320100C6ABCDDA4204A7F9DD33EF75EEBB
+RUN=golphi-win32-themed.test.exe; Regex=^TestWindowsFont
+font-themed=PASS; LOG=<test-root>\artifacts\win01-font-evidence\font-themed-150-20261123-105302.log
+ARTIFACT=<test-root>\artifacts\win01-font\golphi-win32-themed.test.exe; SHA256=5E588FD06A2371EE6F43E8EC4AC31F320100C6ABCDDA4204A7F9DD33EF75EEBB
+RUN=golphi-win32-themed.test.exe; Regex=^TestNative(DynamicTreeWin32|RetainedHWNDTransferWin32|AbortedTreeCleanupWin32)$
+backend-regression=PASS; LOG=<test-root>\artifacts\win01-font-evidence\backend-regression-150-20261123-105302.log
+ARTIFACT=<test-root>\artifacts\win01-font\golphi-ui-themed.test.exe; SHA256=A1F1D708CB0A05CDC49A3B7A6FAF3B3C7D923CD82571AB75EB54F8EE88348AE9
+RUN=golphi-ui-themed.test.exe; Regex=^(TestStartupFailure|TestNativeDynamicTreeIntegration)$
+ui-regression=PASS; LOG=<test-root>\artifacts\win01-font-evidence\ui-regression-150-20261123-105302.log
+AUTOMATED_CHECKS=PASS; ручные сценарии ещё не подтверждены.
+ARTIFACT=<test-root>\artifacts\win01-font\hello.exe; SHA256=399A4A81DD88F26F9DE56757B60E43B78B05C42C6BAE2426581B43832C41B3EE
+ARTIFACT=<test-root>\artifacts\win01-font\windows-appearance.exe; SHA256=213ADD643E35F9DEBDE502B912E864B441EF6CF27FDD90C14C617D0178CF7492
+ARTIFACT=<test-root>\artifacts\win01-font\dynamic-tree.exe; SHA256=882163138C3F634B3B2D1D03C2C1275085EE0CF343FFCF03A7B6CC293D24149A
+ManualAppearance=PASS; два снимка и DPI окон записаны отдельными capture-журналами.
+ManualRetainedTransfer=PASS
+WINDOWS_FONT_RUN=PASS
