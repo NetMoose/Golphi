@@ -26,6 +26,7 @@ CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags='-H windowsgui' -o dyn
 - [Экспериментальный API и ограничения](docs/components-mvp.md)
 - [Текущий срез, общий дизайн и открытые вопросы](docs/design.md)
 - Динамическое дерево реализовано в [PR #11](https://github.com/NetMoose/Golphi/pull/11), слитом в `develop`. Правила перенесены в основные спецификации. [Архив изменения OpenSpec](openspec/changes/archive/2026-11-20-implement-dynamic-component-tree/proposal.md)
+- Нативное оформление Windows и системный шрифт приняты при 100% и 150%. [Спецификация WIN-01](openspec/specs/windows-native-appearance/spec.md) · [Отчёт о проверке](docs/win01-progress.md)
 - [Отчёт о принятом статическом MVP](docs/mvp-validation.md) и [его инструкция сборки](docs/mvp-build.md)
 
 Лицензия [MIT](LICENSE).

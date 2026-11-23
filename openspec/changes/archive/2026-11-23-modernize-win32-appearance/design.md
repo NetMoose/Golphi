@@ -6,7 +6,7 @@
 
 Текущий Win32 `driver` в `internal/backend/win32/driver_windows.go` устанавливает system-aware DPI-контекст UI-потока, получает DPI запуска и масштабирует геометрию относительно 96 DPI. `CreateWindowExW` создаёт стандартные EDIT/BUTTON/STATIC; системный шрифт им явно не назначается. В проекте нет Windows manifest/`.syso`. `Close` уже пытается уничтожить оставшиеся peers, собирает ошибки и сохраняет нативную инфраструктуру, если уничтожение не удалось. Динамическое дерево может сохранять HWND либо пересоздавать peers; обе ветви должны получать корректное оформление.
 
-Принятая матрица остаётся Windows 11/amd64 и существующий Linux Mint/GTK4/X11 для регрессий; Go 1.26.5, CGO_ENABLED=0. Базовые контракты [runtime](../../specs/native-ui-runtime/spec.md) и [failure](../../specs/application-failure/spec.md) не заменяются. Общие вопросы исходного дизайна и [архива дерева](../archive/2026-11-20-implement-dynamic-component-tree/design.md#open-questions) не закрываются.
+Принятая матрица остаётся Windows 11/amd64 и существующий Linux Mint/GTK4/X11 для регрессий; Go 1.26.5, CGO_ENABLED=0. Базовые контракты [runtime](../../../specs/native-ui-runtime/spec.md) и [failure](../../../specs/application-failure/spec.md) не заменяются. Общие вопросы исходного дизайна и [архива дерева](../2026-11-20-implement-dynamic-component-tree/design.md#open-questions) не закрываются.
 
 ## Goals / Non-Goals
 
@@ -86,7 +86,7 @@ Windows 11/amd64, 100% и 150%; перед каждым прогоном зав�
 
 ## Open Questions
 
-Сохраняются все ранее открытые вопросы [динамического дерева](../archive/2026-11-20-implement-dynamic-component-tree/design.md#open-questions) и остаток Q-01–Q-14 из [исходного дизайна](../../../docs/design.md), кроме уже согласованного узкого объёма WIN-01. В частности:
+Сохраняются все ранее открытые вопросы [динамического дерева](../2026-11-20-implement-dynamic-component-tree/design.md#open-questions) и остаток Q-01–Q-14 из [исходного дизайна](../../../../docs/design.md), кроме уже согласованного узкого объёма WIN-01. В частности:
 
 - Смена DPI между мониторами, системного шрифта/темы во время работы, тёмная и собственная тема, другие Windows-конфигурации и масштабы, новые платформы.
 - Общий Font API, наследование/пользовательские шрифты, измерение содержимого, layout/resizing, изменение геометрии присоединённых контролов.
