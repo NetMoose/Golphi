@@ -1,0 +1,8 @@
+ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\capture-win01-baseline-windows.ps1 -Scale 100
+Join-Path : Не удается привязать аргумент к параметру "Path", так как он представляет собой пустую строку.
+C:\Users\lynxh\Downloads\golphi\scripts\capture-win01-baseline-windows.ps1:5 знак:31
++     [string]$Exe = (Join-Path $PSScriptRoot '../artifacts/win01-basel ...
++                               ~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Join-Path], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : ParameterArgumentValidationErrorEmptyStringNotAllowed,Microsoft.PowerShell.Commands.Join
+   PathCommand

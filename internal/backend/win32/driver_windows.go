@@ -18,7 +18,8 @@ const (
 	wmClose    = 0x10
 	wmCommand  = 0x111
 	formStyle  = 0x00c80000 | 0x00080000 | 0x00020000 | 0x02000000
-	childStyle = 0x40000000 | 0x10000000
+	wsVisible  = 0x10000000
+	childStyle = 0x40000000 | wsVisible
 )
 
 type rect struct{ left, top, right, bottom int32 }
@@ -67,6 +68,7 @@ type driver struct {
 	instance    uintptr
 	class       []uint16
 	atom        uintptr
+	font        uintptr
 	dpi         uint32
 	previousDPI uintptr
 	failure     *backend.Panic
@@ -92,6 +94,9 @@ func New() backend.Driver {
 }
 func (d *driver) call(name string, args ...uintptr) (uintptr, error) {
 	r, _, e := d.api[name].Call(args...)
+	return checkedCall(name, r, e)
+}
+func checkedCall(name string, r uintptr, e error) (uintptr, error) {
 	if r == 0 {
 		if e != syscall.Errno(0) {
 			return r, fmt.Errorf("%s: %w", name, e)
@@ -103,12 +108,20 @@ func (d *driver) call(name string, args ...uintptr) (uintptr, error) {
 func ptr(p *uint16) uintptr { return uintptr(unsafe.Pointer(p)) }
 func (d *driver) Init(cb backend.Callbacks) error {
 	d.cb = cb
+	if err := d.load(); err != nil {
+		return err
+	}
+	return d.initNative()
+}
+func (d *driver) load() error {
 	for _, lib := range []struct {
 		name    string
 		symbols []string
 	}{
-		{"user32.dll", []string{"RegisterClassExW", "UnregisterClassW", "CreateWindowExW", "DestroyWindow", "DefWindowProcW", "PeekMessageW", "MsgWaitForMultipleObjectsEx", "TranslateMessage", "DispatchMessageW", "ShowWindow", "SetWindowTextW", "GetWindowTextLengthW", "GetWindowTextW", "AdjustWindowRectExForDpi", "GetDpiForSystem", "SetThreadDpiAwarenessContext", "LoadCursorW", "SetParent", "GetParent", "SetWindowPos", "GetFocus", "SetFocus", "SendMessageW", "GetCaretPos", "GetKeyState", "SetWindowLongPtrW", "CallWindowProcW", "IsWindow"}},
-		{"kernel32.dll", []string{"GetModuleHandleW", "SetLastError", "CreateEventW", "SetEvent", "ResetEvent", "CloseHandle", "WaitForSingleObject"}}} {
+		{"user32.dll", []string{"RegisterClassExW", "UnregisterClassW", "CreateWindowExW", "DestroyWindow", "DefWindowProcW", "PeekMessageW", "MsgWaitForMultipleObjectsEx", "TranslateMessage", "DispatchMessageW", "ShowWindow", "SetWindowTextW", "GetWindowTextLengthW", "GetWindowTextW", "AdjustWindowRectExForDpi", "GetDpiForSystem", "SystemParametersInfoForDpi", "SetThreadDpiAwarenessContext", "LoadCursorW", "SetParent", "GetParent", "SetWindowPos", "GetFocus", "SetFocus", "SendMessageW", "GetCaretPos", "GetKeyState", "SetWindowLongPtrW", "CallWindowProcW", "IsWindow"}},
+		{"kernel32.dll", []string{"GetModuleHandleW", "SetLastError", "CreateEventW", "SetEvent", "ResetEvent", "CloseHandle", "WaitForSingleObject"}},
+		{"gdi32.dll", []string{"CreateFontIndirectW", "DeleteObject"}},
+	} {
 		dll, err := syscall.LoadDLL(lib.name)
 		if err != nil {
 			return err
@@ -122,6 +135,9 @@ func (d *driver) Init(cb backend.Callbacks) error {
 			d.api[name] = p
 		}
 	}
+	return nil
+}
+func (d *driver) initNative() error {
 	// System-aware context fixes scaling at startup; per-monitor transitions are outside MVP.
 	previous, err := d.call("SetThreadDpiAwarenessContext", ^uintptr(1))
 	if err != nil {
@@ -133,6 +149,10 @@ func (d *driver) Init(cb backend.Callbacks) error {
 		return err
 	}
 	d.dpi = uint32(dpi)
+	d.font, err = d.createSystemFont()
+	if err != nil {
+		return err
+	}
 	d.instance, err = d.call("GetModuleHandleW", 0)
 	if err != nil {
 		return err
@@ -248,6 +268,7 @@ func (d *driver) Create(c backend.Config) (backend.Peer, error) {
 		return 0, err
 	}
 	var parent uintptr
+	fontUser := usesSystemFont(c.Kind)
 	class := d.class
 	style := uintptr(formStyle)
 	ex := uintptr(0)
@@ -258,8 +279,8 @@ func (d *driver) Create(c backend.Config) (backend.Peer, error) {
 		}
 		parent = p.hwnd
 		style = childStyle
-		if d.fenced {
-			style &^= 0x10000000
+		if d.fenced || fontUser {
+			style &^= wsVisible
 		}
 		switch c.Kind {
 		case backend.Panel:
@@ -306,6 +327,9 @@ func (d *driver) Create(c backend.Config) (backend.Peer, error) {
 	}
 	d.peers[id] = peer{hwnd: handle, kind: c.Kind, parent: c.Parent, bounds: c.Bounds}
 	d.byHWND[handle] = id
+	if fontUser {
+		d.api["SendMessageW"].Call(handle, wmSetFont, d.font, 0)
+	}
 	if c.Kind == backend.Edit {
 		editTrampoline.Do(func() { editTrampoline.address = syscall.NewCallback(editProc) })
 		old, err := d.call("SetWindowLongPtrW", handle, ^uintptr(3), editTrampoline.address)
@@ -314,6 +338,7 @@ func (d *driver) Create(c backend.Config) (backend.Peer, error) {
 		}
 		p := d.peers[id]
 		p.oldProc = old
+		d.peers[id] = p // SendMessage below can reenter editProc.
 		// A recreated Edit preserves text, not saved positions. Seed only the
 		// collapsed selection actually observed on this new HWND.
 		lo, hi := d.selection(handle)
@@ -327,6 +352,9 @@ func (d *driver) Create(c backend.Config) (backend.Peer, error) {
 		if actual != c.Text || (c.Input != nil && actual != c.Input.Text) {
 			return 0, errors.Join(errors.New("win32: effective text differs during Edit creation"), d.Destroy(id))
 		}
+	}
+	if fontUser && !d.fenced {
+		d.api["ShowWindow"].Call(handle, 4) // SW_SHOWNOACTIVATE
 	}
 	return id, nil
 }
@@ -351,6 +379,14 @@ func (d *driver) Destroy(id backend.Peer) error {
 	_, err = d.call("DestroyWindow", p.hwnd)
 	if err == nil {
 		for _, childID := range ids {
+			// A failed tree placement may have changed the native parent
+			// before rollback failed. Keep ownership of any HWND that did
+			// not actually die in this cascade.
+			if childID != id {
+				if alive, _, _ := d.api["IsWindow"].Call(d.peers[childID].hwnd); alive != 0 {
+					continue
+				}
+			}
 			delete(d.peers, childID)
 		}
 	}
@@ -457,12 +493,17 @@ func (d *driver) Wake() error {
 func (d *driver) Close() error {
 	d.retired = nil
 	var errs []error
+	attempt := func(operation string, fn func() error) {
+		var err error
+		p := backend.Capture(func() { err = fn() })
+		if err != nil || p != nil {
+			errs = append(errs, backend.CleanupFailure{Operation: operation, Err: err, Panic: p})
+		}
+	}
 	d.cb = backend.Callbacks{}
 	d.quitting = true
-	// Peers normally have been independently attempted by the core; retry native
-	// resources whose earlier Destroy failed, with callback resolution disabled.
-	// Children first avoids invalid handles when native parent destruction
-	// cascades. Each independent failure still allows all remaining attempts.
+	// Peers normally have been independently attempted by the core. Try the
+	// remaining children before the forms that may destroy them in a cascade.
 	ids := make([]backend.Peer, 0, len(d.peers))
 	for id, p := range d.peers {
 		if p.kind != backend.Form {
@@ -476,26 +517,30 @@ func (d *driver) Close() error {
 	}
 	for _, id := range ids {
 		if _, ok := d.peers[id]; ok {
-			if err := d.Destroy(id); err != nil {
-				errs = append(errs, err)
-			}
+			attempt(fmt.Sprintf("DestroyWindow peer %d", id), func() error { return d.Destroy(id) })
 		}
 	}
 
 	d.wakeMu.Lock()
 	if d.wake != 0 {
-		if _, err := d.call("CloseHandle", d.wake); err != nil {
-			errs = append(errs, err)
-		}
+		attempt("CloseHandle", func() error {
+			_, err := d.call("CloseHandle", d.wake)
+			return err
+		})
 		d.wake = 0
 	}
 	d.wakeMu.Unlock()
+	if d.font != 0 {
+		attempt("DeleteObject", d.deleteSystemFont)
+	}
 	if d.atom != 0 {
-		if _, err := d.call("UnregisterClassW", ptr(&d.class[0]), d.instance); err != nil {
-			errs = append(errs, err)
-		} else {
-			d.atom = 0
-		}
+		attempt("UnregisterClassW", func() error {
+			_, err := d.call("UnregisterClassW", ptr(&d.class[0]), d.instance)
+			if err == nil {
+				d.atom = 0
+			}
+			return err
+		})
 	}
 	registry.Lock()
 	if registry.owner == d && d.atom == 0 && len(d.peers) == 0 {
@@ -503,22 +548,19 @@ func (d *driver) Close() error {
 	}
 	registry.Unlock()
 	if d.previousDPI != 0 {
-		if _, err := d.call("SetThreadDpiAwarenessContext", d.previousDPI); err != nil {
-			errs = append(errs, err)
-		}
+		attempt("SetThreadDpiAwarenessContext", func() error {
+			_, err := d.call("SetThreadDpiAwarenessContext", d.previousDPI)
+			return err
+		})
 		d.previousDPI = 0
 	}
-	// If native teardown failed and the class is still registered, retain its
-	// default-procedure DLL and inert registry entry. No application sink is
-	// retained, and late messages remain ABI-safe rather than calling freed code.
-	if d.atom != 0 || len(d.peers) != 0 {
-		return errors.Join(errs...)
-	}
-	for _, dll := range d.dlls {
-		if err := dll.Release(); err != nil {
-			errs = append(errs, err)
+	// A retained HWND may still call into the backend. Keep its DLLs and
+	// inert registry entry alive. Keep the DLLs for an unreleased font too.
+	if d.atom == 0 && len(d.peers) == 0 && d.font == 0 {
+		for _, dll := range d.dlls {
+			attempt("FreeLibrary "+dll.Name, dll.Release)
 		}
+		d.dlls = nil
 	}
-	d.dlls = nil
 	return errors.Join(errs...)
 }

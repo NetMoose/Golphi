@@ -1,0 +1,19 @@
+WIN-01 stage 1: build/resource evidence, native Windows PENDING
+ImplementationCommit=b782df356a5749c91714247879f244d49f76af25
+BaselineCommit=acc3afe51784cd1f75a4de248260ba442504aad1
+Host=Linux amd64; Go=1.26.5; CGO_ENABLED=0
+Tool=github.com/tc-hib/go-winres v0.3.3
+Windows generation/build/baseline captures still required; backend font unchanged.
+SHA256 a98742a451d0fafabbf4f7ea9d1e7478e37134134df0ab45a2acef4704635553 artifacts/win01-baseline/hello-baseline.exe
+SHA256 a806842c4a9d98ec76146be5f93639180a35ba792b41990cefe52bb7b26e9a5f examples/hello/app.manifest.xml
+SHA256 ab2527b9b038754046dd3651c773f5267a40f7bebb30911a263e493ca4ce6410 examples/hello/rsrc_windows_amd64.syso
+SHA256 47d95b2e61718bfff87ed0aec6ea05a7d4091a0d4eeb8e9906e1fe10072b0802 examples/dynamic-tree/app.manifest.xml
+SHA256 4ec5c3819646dd0e782b773aeab7953033e0e46fee34a721c6fcc5c837f78929 examples/dynamic-tree/rsrc_windows_amd64.syso
+SHA256 95ede91189f93add54820e79c25e1ae1515c68502adf5f84d151fe6e28c2828a tools/winres/go.mod
+SHA256 9078e4a3851010239b8b9e871e4f85d14083a416eccd81701422ab3141aaaf65 tools/winres/go.sum
+
+HandoffRevision=2 (post-binding script path initialization)
+HandoffFixBase=732266501eb026532be9a430ea10c68e85676035
+WindowsPowerShell51Rerun=PENDING
+SHA256 4abcae5540ea8aad2589b9f6260c3e77c480d5e11f4ab94f2a0130c96bc9e37c scripts/capture-win01-baseline-windows.ps1
+SHA256 35683abf42a468d91099ef4f13f23e847711db923de63eb3a6ed750a4955a1f5 scripts/verify-win01-resources-windows.ps1

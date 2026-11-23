@@ -1,0 +1,42 @@
+=== RUN   TestWindowsFontABI
+--- PASS: TestWindowsFontABI (0.00s)
+=== RUN   TestWindowsFontAtRequestedDPI
+=== RUN   TestWindowsFontAtRequestedDPI/96
+=== RUN   TestWindowsFontAtRequestedDPI/144
+--- PASS: TestWindowsFontAtRequestedDPI (0.01s)
+    --- PASS: TestWindowsFontAtRequestedDPI/96 (0.00s)
+    --- PASS: TestWindowsFontAtRequestedDPI/144 (0.00s)
+=== RUN   TestWindowsFontLifetime
+    font_windows_test.go:118: FONT_DPI=96
+--- PASS: TestWindowsFontLifetime (0.00s)
+=== RUN   TestWindowsFontStartupFaults
+=== RUN   TestWindowsFontStartupFaults/SystemParametersInfoForDpi
+=== RUN   TestWindowsFontStartupFaults/CreateFontIndirectW
+=== RUN   TestWindowsFontStartupFaults/CreateEventW
+--- PASS: TestWindowsFontStartupFaults (0.00s)
+    --- PASS: TestWindowsFontStartupFaults/SystemParametersInfoForDpi (0.00s)
+    --- PASS: TestWindowsFontStartupFaults/CreateFontIndirectW (0.00s)
+    --- PASS: TestWindowsFontStartupFaults/CreateEventW (0.00s)
+=== RUN   TestWindowsFontCleanupFaults
+=== RUN   TestWindowsFontCleanupFaults/delete-error
+=== RUN   TestWindowsFontCleanupFaults/delete-panic
+=== RUN   TestWindowsFontCleanupFaults/event-panic
+=== RUN   TestWindowsFontCleanupFaults/live-edit
+--- PASS: TestWindowsFontCleanupFaults (0.00s)
+    --- PASS: TestWindowsFontCleanupFaults/delete-error (0.00s)
+    --- PASS: TestWindowsFontCleanupFaults/delete-panic (0.00s)
+    --- PASS: TestWindowsFontCleanupFaults/event-panic (0.00s)
+    --- PASS: TestWindowsFontCleanupFaults/live-edit (0.00s)
+=== RUN   TestWindowsFontPreservesCallbackFailure
+=== RUN   TestWindowsFontPreservesCallbackFailure/handler
+=== RUN   TestWindowsFontPreservesCallbackFailure/Post
+--- PASS: TestWindowsFontPreservesCallbackFailure (0.00s)
+    --- PASS: TestWindowsFontPreservesCallbackFailure/handler (0.00s)
+    --- PASS: TestWindowsFontPreservesCallbackFailure/Post (0.00s)
+=== RUN   TestWindowsFontVisualStyles
+    font_windows_test.go:368: IS_APP_THEMED=1 IS_THEME_ACTIVE=1 BUTTON_THEME=0x0
+--- PASS: TestWindowsFontVisualStyles (0.02s)
+=== RUN   TestWindowsFontEditCreationPublishesOriginalProc
+--- PASS: TestWindowsFontEditCreationPublishesOriginalProc (0.00s)
+PASS
+EXIT_CODE=0

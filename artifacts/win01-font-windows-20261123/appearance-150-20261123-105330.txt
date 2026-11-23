@@ -1,0 +1,27 @@
+OS=Майкрософт Windows 11 Pro; Version=10.0.26200; Build=26200; Architecture=64-разрядная
+PowerShell=5.1.26100.9711; RequestedScale=150; EXE=<test-root>\artifacts\win01-font\windows-appearance.exe
+SHA256=213ADD643E35F9DEBDE502B912E864B441EF6CF27FDD90C14C617D0178CF7492
+WIN-01 font/appearance handoff; native Windows pending
+SourceCommit=cab4d6dae95af7ca162317e3aa7fbb8194fad8a5
+Win32TestRevision=5f4c5d7c7093eb2792203f7129c2ab6900cab3c6d1b7477e22582a0a75651b17 (internal/backend/win32/font_windows_test.go, SHA256; corrected classic Button theme assertion)
+BaselineReference=artifacts/win01-stage1-windows-20261122
+Host=Linux amd64; Go=1.26.5; CGO_ENABLED=0
+GoWinres=github.com/tc-hib/go-winres v0.3.3
+BuildGUI=GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -buildvcs=false -ldflags="-H windowsgui" ./examples/<name>
+BuildTests=GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go test -c ./internal/backend/win32 (or ./ui)
+ThemedTests=copy classic EXE; pinned go-winres patch --in examples/hello/winres.json --no-backup <test.exe>
+Checked: GUI/console subsystem, manifest absence/presence, single RT_MANIFEST #1/0409 and raw XML identity
+WindowsFONT/style/runtime/clipping/manual acceptance=PENDING
+SHA256 882163138c3f634b3b2d1d03c2c1275085ee0cf343ffcf03a7b6cc293d24149a dynamic-tree.exe
+SHA256 a1f1d708cb0a05cdc49a3b7a6faf3b3c7d923cd82571ab75eb54f8ee88348ae9 golphi-ui-themed.test.exe
+SHA256 9067dbd21c24bfacbec5f144d95be15e3c202e599d67a24a9794cc3047860dbe golphi-win32-classic.test.exe
+SHA256 5e588fd06a2371ee6f43e8ec4ac31f320100c6abcdda4204a7f9dd33ef75eebb golphi-win32-themed.test.exe
+SHA256 399a4a81dd88f26f9de56757b60e43b78b05c42c6bae2426581b43832c41b3ee hello.exe
+SHA256 213add643e35f9debde502b912e864b441ef6cf27fdd90c14c617d0178cf7492 windows-appearance.exe
+SHA256 e02ec199ffe2fa54f74d57440ece7427346f1f01633b9f5f86133138ac1737a3 scripts/verify-win01-font-windows.ps1
+SHA256 5be027a4d2c34980226d4541bb012ddffd806cb1e2a5965352015859a6c80808 scripts/capture-win01-window-windows.ps1
+WindowDPI=144; ExpectedDPI=144
+Screenshot=<test-root>\artifacts\win01-font-evidence\appearance-150-20261123-105330.png; WindowRect=0,0,838,611
+ManualWindow=PASS
+ExitCode=0
+WINDOW_CAPTURE=PASS; отдельные нативные проверки подтверждают HFONT/styles
