@@ -44,3 +44,5 @@
 Шрифтовой checkpoint (2026-11-22): код 2.1–2.4 и native readback/styles 3.2 подготовлен, review и cross-build пройдены, но целевые Windows-тесты ещё не исполнены — эти пункты пока открыты. Пример 3.1 собран на обеих целях; новые проверки передаются по docs/windows-font-verification.md.
 
 Передача шрифтового этапа (2026-11-22): подготовлены пакет и русские инструкции 3.3, выполнены review/сборки/проверка ссылок и commit/push 3.4. Metadata — artifacts/win01-font/build.txt, пакет — artifacts/golphi-win01-font-windows.zip. Полноценные Windows-результаты Font/readback/fault/clipping/retained-transfer ожидаются; 2.1–2.5, 3.2 и итоговые 4.x не закрыты.
+
+Повторная передача: исправлен синтаксис PowerShell. Для прогона использовать компактный пакет artifacts/golphi-win01-font-windows-v2.zip по инструкции docs/windows-font-verification.md.

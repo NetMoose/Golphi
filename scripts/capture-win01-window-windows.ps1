@@ -64,7 +64,7 @@ try {
     if ($CaptureName -eq 'hello-after') {
         Write-Host 'Оставьте исходный текст «Мир» для сравнения с baseline на том же масштабе.'
     } else {
-        Write-Host 'Выполните ручные пункты docs/windows-appearance-example.md: текст, clipping, ввод и добавление/скрытие/возврат подписи.'
+        Write-Host 'Перед снимком выполните ручные проверки примера из docs/windows-font-verification.md.'
     }
     Write-Host 'Уберите перекрывающие окна с формы перед снимком.'
     Read-Host 'Нажмите Enter для снимка текущего оформления' | Out-Null

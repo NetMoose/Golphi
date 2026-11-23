@@ -69,7 +69,7 @@ try {
     $capture=Join-Path $scriptDirectory 'capture-win01-window-windows.ps1'
     Write-Host "Сначала снимок $hello для сравнения с прежним baseline на том же DPI."
     & $capture -Scale $Scale -Exe $hello -CaptureName 'hello-after' -OutputDirectory $OutputDirectory
-    Write-Host "Теперь $appearance: выполните docs/windows-appearance-example.md перед снимком."
+    Write-Host "Теперь откроется $appearance. Перед снимком выполните пункты из docs/windows-font-verification.md."
     & $capture -Scale $Scale -Exe $appearance -CaptureName 'appearance' -OutputDirectory $OutputDirectory
     Write-Log 'ManualAppearance=PASS; два снимка и DPI окон записаны отдельными capture-журналами.'
     Write-Host "Запустите $tree для проверки прямого переноса поля."
