@@ -18,7 +18,7 @@ OpenSpec остаётся единым источником требований
 
 ## WIN-01: Современное нативное оформление Windows
 
-- [ ] В работе как [modernize-win32-appearance](../openspec/changes/modernize-win32-appearance/proposal.md). Ресурсный этап и baseline приняты; код системного шрифта и проверочный пример подготовлены, итоговая Windows-приёмка ожидается. В `implement-dynamic-component-tree` не входит.
+- [ ] В работе как [modernize-win32-appearance](../openspec/changes/modernize-win32-appearance/proposal.md). Ресурсный этап, baseline и прогон v3 при 100% приняты. Для итоговой Windows-приёмки требуется прогон при 150%. В `implement-dynamic-component-tree` не входит.
 
 Согласовано 13 ноября 2026 года после ручной проверки динамического примера.
 Цель — убрать классический вид Win32-контролов, сохранив нативное поведение.

@@ -1,0 +1,14 @@
+=== RUN   TestNativeRetainedHWNDTransferWin32
+--- PASS: TestNativeRetainedHWNDTransferWin32 (0.05s)
+=== RUN   TestNativeAbortedTreeCleanupWin32
+=== RUN   TestNativeAbortedTreeCleanupWin32/late-child
+=== RUN   TestNativeAbortedTreeCleanupWin32/late-child-in-callback
+=== RUN   TestNativeAbortedTreeCleanupWin32/shown-root-in-callback
+--- PASS: TestNativeAbortedTreeCleanupWin32 (0.04s)
+    --- PASS: TestNativeAbortedTreeCleanupWin32/late-child (0.01s)
+    --- PASS: TestNativeAbortedTreeCleanupWin32/late-child-in-callback (0.01s)
+    --- PASS: TestNativeAbortedTreeCleanupWin32/shown-root-in-callback (0.02s)
+=== RUN   TestNativeDynamicTreeWin32
+--- PASS: TestNativeDynamicTreeWin32 (0.04s)
+PASS
+EXIT_CODE=0
